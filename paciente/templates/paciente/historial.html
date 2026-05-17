@@ -1,0 +1,40 @@
+{% extends 'paciente/base.html' %}
+
+{% block title %}Historial — Recordatin{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title">Historial de medicinas</h1>
+    <p class="lead-text">Vea qué medicinas tomó en días anteriores</p>
+
+    <div class="filter-bar" role="group" aria-label="Filtrar por días">
+        <a href="?dias=7" class="filter-btn {% if dias == 7 %}active{% endif %}">Últimos 7 días</a>
+        <a href="?dias=30" class="filter-btn {% if dias == 30 %}active{% endif %}">Últimos 30 días</a>
+    </div>
+
+    {% if tomas %}
+    <ul class="historial-list">
+        {% for toma in tomas %}
+        <li class="historial-item historial-{{ toma.estado }}">
+            <div class="historial-date">
+                <span class="historial-day">{{ toma.fecha|date:"d M" }}</span>
+                <span class="historial-hour">{{ toma.hora_programada|time:"H:i" }}</span>
+            </div>
+            <div class="historial-body">
+                <strong>{{ toma.medicamento.nombre }}</strong>
+                <span>{{ toma.medicamento.dosis }}</span>
+                {% if toma.hora_registrada %}
+                <p class="text-muted">Tomó a las {{ toma.hora_registrada|time:"H:i" }}</p>
+                {% endif %}
+            </div>
+            <span class="badge badge-{{ toma.estado }}">{{ toma.get_estado_display }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <article class="card">
+        <p class="empty-state">No hay registros en estos días.</p>
+    </article>
+    {% endif %}
+</section>
+{% endblock %}

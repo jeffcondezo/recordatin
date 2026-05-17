@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión — Recordatin</title>
+    <link rel="icon" href="{% static 'paciente/img/logo.jpeg' %}" type="image/jpeg">
+    <link rel="stylesheet" href="{% static 'paciente/css/app.css' %}">
+</head>
+<body class="login-page">
+    <main class="login-container">
+        <div class="login-brand">
+            <img src="{% static 'paciente/img/logo.jpeg' %}" alt="Recordatin" class="login-logo">
+            <h1>Bienvenido</h1>
+            <p class="lead-text">Sus recordatorios de medicamentos</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-error" role="alert">
+            Usuario o contraseña incorrectos. Inténtelo de nuevo.
+        </div>
+        {% endif %}
+
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <form method="post" class="login-form">
+            {% csrf_token %}
+            <label for="id_username">Usuario</label>
+            <input type="text" name="username" id="id_username" required autofocus autocomplete="username" placeholder="Escriba su usuario">
+
+            <label for="id_password">Contraseña</label>
+            <input type="password" name="password" id="id_password" required autocomplete="current-password" placeholder="Escriba su contraseña">
+
+            <button type="submit" class="btn btn-primary btn-block" aria-label="Entrar a la aplicación">Entrar</button>
+        </form>
+
+        <p class="login-hint text-muted">Prueba: paciente.demo / demo1234</p>
+    </main>
+</body>
+</html>

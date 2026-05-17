@@ -1,0 +1,52 @@
+{% extends 'paciente/base.html' %}
+
+{% block title %}Mis medicinas de hoy — Recordatin{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title">Mis medicinas de hoy</h1>
+    <p class="page-subtitle">{{ resumen.total }} medicina{{ resumen.total|pluralize }} programada{{ resumen.total|pluralize }} para hoy</p>
+
+    {% if resumen.tomas %}
+    <ul class="med-list">
+        {% for toma in resumen.tomas %}
+        <li class="med-card med-card-{{ toma.etiqueta }}">
+            <div class="med-card-header">
+                <span class="med-time-lg">{{ toma.hora_programada|time:"H:i" }}</span>
+                <span class="badge badge-{{ toma.etiqueta }}">
+                    {% if toma.etiqueta == 'tomado' %}Ya tomado
+                    {% elif toma.etiqueta == 'atrasado' %}Es hora de tomarlo
+                    {% elif toma.etiqueta == 'proximo' %}Próximo
+                    {% else %}Pendiente{% endif %}
+                </span>
+            </div>
+            <h2 class="med-name">{{ toma.medicamento.nombre }}</h2>
+            <p class="med-dosis">{{ toma.medicamento.dosis }} — {{ toma.medicamento.get_via_display }}</p>
+            {% if toma.estado != 'tomado' %}
+            <p class="med-tiempo-restante" aria-live="polite">{{ toma.tiempo_texto }}</p>
+            {% endif %}
+            {% if toma.medicamento.instrucciones %}
+            <p class="med-instrucciones">{{ toma.medicamento.instrucciones }}</p>
+            {% endif %}
+            {% if toma.estado != 'tomado' %}
+            <form method="post" action="{% url 'paciente:marcar_tomado' toma.pk %}" class="med-form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-block" aria-label="Registrar que tomó {{ toma.medicamento.nombre }}">
+                    Ya lo tomé
+                </button>
+            </form>
+            {% else %}
+            <p class="med-tomado-at">
+                Registrado a las {{ toma.hora_registrada|time:"H:i" }}
+            </p>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <article class="card">
+        <p class="empty-state">Hoy no tiene medicinas programadas.</p>
+    </article>
+    {% endif %}
+</section>
+{% endblock %}

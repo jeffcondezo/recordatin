@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Recordatin{% endblock %}</title>
+    <link rel="icon" href="{% static 'paciente/img/logo.jpeg' %}" type="image/jpeg">
+    <link rel="stylesheet" href="{% static 'paciente/css/app.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header class="app-header">
+        <a href="{% url 'paciente:dashboard' %}" class="brand" aria-label="Recordatin — Ir al inicio">
+            <img src="{% static 'paciente/img/logo.jpeg' %}" alt="Recordatin" class="brand-logo">
+        </a>
+        {% block header_extra %}{% endblock %}
+    </header>
+
+    {% if messages %}
+    <div class="messages" role="status" aria-live="polite">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if resumen and resumen.pendientes > 0 %}
+    <div class="banner-alert" role="alert">
+        <span class="banner-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7v4.1l-1.4 2.8A1 1 0 0 0 4.6 17h14.8a1 1 0 0 0 .9-1.5L19 13.1V9a7 7 0 0 0-7-7zm0 20a3 3 0 0 0 2.83-2h-5.66A3 3 0 0 0 12 22z"/></svg>
+        </span>
+        <p>Le falta tomar <strong>{{ resumen.pendientes }}</strong> medicamento{{ resumen.pendientes|pluralize }}</p>
+    </div>
+    {% endif %}
+
+    <main class="app-main" id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <nav class="bottom-nav" aria-label="Menú principal">
+        <a href="{% url 'paciente:dashboard' %}" class="nav-item {% if nav_active == 'inicio' %}active{% endif %}">
+            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+            <span>Inicio</span>
+        </a>
+        <a href="{% url 'paciente:medicamentos_hoy' %}" class="nav-item {% if nav_active == 'hoy' %}active{% endif %}">
+            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+            <span>Medicinas</span>
+        </a>
+        <a href="{% url 'paciente:historial' %}" class="nav-item {% if nav_active == 'historial' %}active{% endif %}">
+            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+            <span>Historial</span>
+        </a>
+        <a href="{% url 'paciente:citas' %}" class="nav-item {% if nav_active == 'citas' %}active{% endif %}">
+            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
+            <span>Citas</span>
+        </a>
+        <a href="{% url 'paciente:perfil' %}" class="nav-item {% if nav_active == 'perfil' %}active{% endif %}">
+            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    {% if recordatorios %}
+    {{ recordatorios|json_script:"recordatorios-data" }}
+    <script src="{% static 'paciente/js/reminders.js' %}"></script>
+    {% endif %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

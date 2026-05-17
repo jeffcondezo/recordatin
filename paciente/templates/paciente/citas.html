@@ -1,0 +1,61 @@
+{% extends 'paciente/base.html' %}
+
+{% block title %}Mis citas — Recordatin{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title">Mis citas médicas</h1>
+    <p class="lead-text">Fechas y lugares de sus consultas</p>
+
+    {% if proxima_cita %}
+    <article class="card card-highlight">
+        <span class="card-label">Su próxima cita</span>
+        <p class="card-highlight-date">{{ proxima_cita.fecha_hora|date:"l d \d\e F Y" }}</p>
+        <p class="card-highlight-time">{{ proxima_cita.fecha_hora|time:"H:i" }}</p>
+        <h2>{{ proxima_cita.especialidad }}</h2>
+        <p><strong>Lugar:</strong> {{ proxima_cita.lugar }}</p>
+        {% if proxima_cita.motivo %}
+        <p class="text-muted">{{ proxima_cita.motivo }}</p>
+        {% endif %}
+    </article>
+    {% endif %}
+
+    {% if citas_futuras %}
+    <h2 class="section-subtitle">Citas que vienen</h2>
+    <ul class="citas-list">
+        {% for cita in citas_futuras %}
+        <li class="cita-item">
+            <div class="cita-date">
+                <span class="cita-day">{{ cita.fecha_hora|date:"d" }}</span>
+                <span class="cita-month">{{ cita.fecha_hora|date:"M" }}</span>
+            </div>
+            <div class="cita-body">
+                <strong>{{ cita.especialidad }}</strong>
+                <p>{{ cita.fecha_hora|time:"H:i" }} — {{ cita.lugar }}</p>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% elif not proxima_cita %}
+    <article class="card">
+        <p class="empty-state">No tiene citas programadas por ahora.</p>
+    </article>
+    {% endif %}
+
+    {% if citas_pasadas %}
+    <h2 class="section-subtitle">Citas pasadas</h2>
+    <ul class="citas-list citas-pasadas">
+        {% for cita in citas_pasadas %}
+        <li class="cita-item">
+            <div class="cita-body">
+                <strong>{{ cita.especialidad }}</strong>
+                <p>{{ cita.fecha_hora|date:"d/m/Y" }} a las {{ cita.fecha_hora|time:"H:i" }}</p>
+                <p>{{ cita.lugar }}</p>
+                <span class="badge badge-{{ cita.estado }}">{{ cita.get_estado_display }}</span>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{% endblock %}
