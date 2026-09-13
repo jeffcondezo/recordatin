@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido — Recordatin</title>
+    {% include 'paciente/includes/text_size_head.html' %}
+    <link rel="icon" href="{% static 'paciente/img/logo.jpeg' %}" type="image/jpeg">
+    <link rel="stylesheet" href="{% static 'paciente/css/app.css' %}">
+</head>
+<body class="entrada-page">
+    <main class="entrada-container">
+        <div class="entrada-brand">
+            <img src="{% static 'paciente/img/logo.jpeg' %}" alt="Recordatin" class="entrada-logo">
+            <h1>Recordatin</h1>
+            <p class="entrada-lead">Sus recordatorios de medicamentos</p>
+        </div>
+
+        <article class="entrada-instrucciones card">
+            <h2>Escanee su código QR</h2>
+            <p class="entrada-texto">
+                Use la <strong>cámara del celular</strong> para escanear el código que le entregó su médico.
+            </p>
+            <ol class="entrada-pasos">
+                <li>Abra la aplicación <strong>Cámara</strong> de su celular.</li>
+                <li>Apunte al código QR impreso.</li>
+                <li>Toque el enlace que aparece en pantalla.</li>
+            </ol>
+        </article>
+
+        <p class="entrada-ayuda text-muted">
+            Si no tiene su código, pida uno nuevo a su médico o cuidador.
+        </p>
+    </main>
+    <script src="{% static 'paciente/js/text-size.js' %}"></script>
+</body>
+</html>

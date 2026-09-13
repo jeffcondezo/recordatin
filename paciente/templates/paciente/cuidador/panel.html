@@ -1,0 +1,53 @@
+{% extends 'paciente/cuidador/base_cuidador.html' %}
+{% load static %}
+
+{% block title %}Panel cuidador — Recordatin{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title">Medicinas de hoy</h1>
+    <p class="lead-text">
+        Estado de las medicinas de <strong>{{ paciente.nombre }} {{ paciente.apellidos }}</strong>.
+        Solo lectura: usted recibirá avisos si olvida registrar alguna.
+    </p>
+
+    {% include 'paciente/includes/activar_alarmas_cuidador.html' %}
+
+    {% if resumen.pendientes > 0 %}
+    <div class="banner-alert banner-cuidador" role="alert">
+        <p>Faltan <strong>{{ resumen.pendientes }}</strong> medicina{{ resumen.pendientes|pluralize }} por registrar hoy.</p>
+    </div>
+    {% endif %}
+
+    {% if resumen.tomas %}
+    <ul class="med-list med-list-readonly">
+        {% for toma in resumen.tomas %}
+        <li class="med-card med-card-{{ toma.etiqueta }}">
+            <div class="med-card-header">
+                <span class="med-time-lg">{{ toma.hora_programada|time:"H:i" }}</span>
+                <span class="badge badge-{{ toma.etiqueta }}">
+                    {% if toma.etiqueta == 'tomado' %}Registrada
+                    {% elif toma.estado == 'tardio' or toma.ventana_cerrada %}Sin registrar (tarde)
+                    {% elif toma.etiqueta == 'atrasado' %}Debería tomarla
+                    {% else %}Pendiente{% endif %}
+                </span>
+            </div>
+            <h2 class="med-name">{{ toma.medicamento.nombre }}</h2>
+            <p class="med-dosis">{{ toma.medicamento.dosis }}</p>
+            {% if toma.estado == 'tomado' and toma.hora_registrada %}
+            <p class="med-tomado-at">Registrada a las {{ toma.hora_registrada|time:"H:i" }}</p>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <article class="card">
+        <p class="empty-state">Hoy no tiene medicinas programadas.</p>
+    </article>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'paciente/js/alarmas-cuidador.js' %}"></script>
+{% endblock %}

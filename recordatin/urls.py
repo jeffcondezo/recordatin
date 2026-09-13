@@ -1,12 +1,11 @@
 from django.contrib import admin
 from django.urls import include, path
-from django.views.generic import RedirectView
 
-from paciente.views import PacienteLoginView, logout_view
+from paciente.views import PacienteLoginView, entrada, logout_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', RedirectView.as_view(pattern_name='login', permanent=False)),
+    path('', entrada, name='entrada'),
     path(
         'accounts/login/',
         PacienteLoginView.as_view(),

@@ -1,0 +1,77 @@
+{% extends 'paciente/cuidador/base_cuidador.html' %}
+
+{% block title %}Citas médicas — Cuidador{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header-row">
+        <div>
+            <h1 class="page-title">Citas médicas</h1>
+            <p class="lead-text">Gestione el calendario de consultas de {{ paciente.nombre }}</p>
+        </div>
+        <a href="{% url 'paciente:cuidador_cita_nueva' %}" class="btn btn-primary">Nueva cita</a>
+    </div>
+
+    {% if proxima_cita %}
+    <article class="card card-highlight">
+        <span class="card-label">Próxima cita</span>
+        <p class="card-highlight-date">{{ proxima_cita.fecha_hora|date:"l d \d\e F Y" }}</p>
+        <p class="card-highlight-time">{{ proxima_cita.fecha_hora|time:"H:i" }}</p>
+        <h2>{{ proxima_cita.especialidad }}</h2>
+        <p><strong>Lugar:</strong> {{ proxima_cita.lugar }}</p>
+        <div class="cita-actions">
+            <a href="{% url 'paciente:cuidador_cita_editar' proxima_cita.pk %}" class="btn btn-secondary">Editar</a>
+            <form method="post" action="{% url 'paciente:cuidador_cita_cancelar' proxima_cita.pk %}" class="inline-form" onsubmit="return confirm('¿Cancelar esta cita?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger-outline">Cancelar</button>
+            </form>
+        </div>
+    </article>
+    {% endif %}
+
+    {% if citas_futuras %}
+    <h2 class="section-subtitle">Citas programadas</h2>
+    <ul class="citas-list">
+        {% for cita in citas_futuras %}
+        <li class="cita-item">
+            <div class="cita-date">
+                <span class="cita-day">{{ cita.fecha_hora|date:"d" }}</span>
+                <span class="cita-month">{{ cita.fecha_hora|date:"M" }}</span>
+            </div>
+            <div class="cita-body">
+                <strong>{{ cita.especialidad }}</strong>
+                <p>{{ cita.fecha_hora|time:"H:i" }} — {{ cita.lugar }}</p>
+                <div class="cita-actions">
+                    <a href="{% url 'paciente:cuidador_cita_editar' cita.pk %}" class="btn btn-secondary btn-sm">Editar</a>
+                    <form method="post" action="{% url 'paciente:cuidador_cita_cancelar' cita.pk %}" class="inline-form" onsubmit="return confirm('¿Cancelar esta cita?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger-outline btn-sm">Cancelar</button>
+                    </form>
+                </div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% elif not proxima_cita %}
+    <article class="card">
+        <p class="empty-state">No hay citas programadas. Puede agregar una con el botón de arriba.</p>
+    </article>
+    {% endif %}
+
+    {% if citas_pasadas %}
+    <h2 class="section-subtitle">Historial de citas</h2>
+    <ul class="citas-list citas-pasadas">
+        {% for cita in citas_pasadas %}
+        <li class="cita-item">
+            <div class="cita-body">
+                <strong>{{ cita.especialidad }}</strong>
+                <p>{{ cita.fecha_hora|date:"d/m/Y" }} a las {{ cita.fecha_hora|time:"H:i" }}</p>
+                <p>{{ cita.lugar }}</p>
+                <span class="badge badge-{{ cita.estado }}">{{ cita.get_estado_display }}</span>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{% endblock %}

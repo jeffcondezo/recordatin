@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar sesión — Recordatin</title>
+    {% include 'paciente/includes/text_size_head.html' %}
     <link rel="icon" href="{% static 'paciente/img/logo.jpeg' %}" type="image/jpeg">
     <link rel="stylesheet" href="{% static 'paciente/css/app.css' %}">
 </head>
@@ -38,8 +39,7 @@
 
             <button type="submit" class="btn btn-primary btn-block" aria-label="Entrar a la aplicación">Entrar</button>
         </form>
-
-        <p class="login-hint text-muted">Prueba: paciente.demo / demo1234</p>
     </main>
+    <script src="{% static 'paciente/js/text-size.js' %}"></script>
 </body>
 </html>

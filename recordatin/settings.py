@@ -128,11 +128,25 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'paciente:dashboard'
-LOGOUT_REDIRECT_URL = 'login'
+LOGIN_URL = 'entrada'
+LOGIN_REDIRECT_URL = 'paciente:medicamentos_hoy'
+LOGOUT_REDIRECT_URL = 'entrada'
+
+# URL base para enlaces QR (producción). Ej: https://recordatin.ejemplo.com
+SITE_URL = 'http://127.0.0.1:8000'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Web Push (VAPID) — generar nuevas claves en producción: py-vapid / pywebpush
+VAPID_PUBLIC_KEY = (
+    'BKzF7emho49M5yPDDV-5OW9iSahrJBnxtfEI5bJvRX5_6AD8dFf0-N0J1AWFjCFzp2zB7T3qqgSTXU1B4crm_VY'
+)
+VAPID_PRIVATE_KEY = """-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgD2EAV6wbfDImepeM
+lEZ8bjwBOPcOVRSOX730qEaE6kChRANCAASsxe3poaOPTOcjww1fuTlvYkmoayQZ
+8bXxCOWyb0V+f+gA/HRX9PjdCdQFhYwhc6dswe096qoEk11NQeHK5v1W
+-----END PRIVATE KEY-----"""
+VAPID_CLAIMS_EMAIL = 'mailto:admin@recordatin.local'

@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Código no válido — Recordatin</title>
+    {% include 'paciente/includes/text_size_head.html' %}
+    <link rel="icon" href="{% static 'paciente/img/logo.jpeg' %}" type="image/jpeg">
+    <link rel="stylesheet" href="{% static 'paciente/css/app.css' %}">
+</head>
+<body class="entrada-page">
+    <main class="entrada-container">
+        <div class="entrada-brand">
+            <img src="{% static 'paciente/img/logo.jpeg' %}" alt="Recordatin" class="entrada-logo">
+            <h1>Código no válido</h1>
+        </div>
+        <article class="card entrada-instrucciones">
+            <p class="entrada-texto">
+                Este código QR no es válido o ya no está activo.
+                Pida uno nuevo a su médico o cuidador.
+            </p>
+            <a href="{% url 'entrada' %}" class="btn btn-primary btn-block">Volver</a>
+        </article>
+    </main>
+    <script src="{% static 'paciente/js/text-size.js' %}"></script>
+</body>
+</html>

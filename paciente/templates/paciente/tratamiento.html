@@ -1,0 +1,55 @@
+{% extends 'paciente/base.html' %}
+
+{% block title %}Mi tratamiento — Recordatin{% endblock %}
+
+{% block header_extra %}
+<p class="greeting">Hola, {{ paciente.nombre }}</p>
+{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title">Mi tratamiento</h1>
+
+    {% if prescripcion %}
+    <article class="card tratamiento-card">
+        <h2>Prescripción activa</h2>
+        <p class="text-muted">
+            Médico: <strong>{{ prescripcion.medico_nombre }}</strong><br>
+            Desde: {{ prescripcion.fecha_inicio|date:"d/m/Y" }}
+        </p>
+        {% if prescripcion.indicaciones_generales %}
+        <p class="tratamiento-indicaciones">{{ prescripcion.indicaciones_generales }}</p>
+        {% endif %}
+    </article>
+
+    {% if medicamentos %}
+    <h2 class="section-subtitle">Medicamentos</h2>
+    <ul class="tratamiento-lista">
+        {% for med in medicamentos %}
+        <li class="card tratamiento-med">
+            <h3>{{ med.nombre }}</h3>
+            <p>{{ med.dosis }} — {{ med.get_via_display }}</p>
+            {% if med.instrucciones %}
+            <p class="med-instrucciones">{{ med.instrucciones }}</p>
+            {% endif %}
+            {% if med.horarios.all %}
+            <p class="tratamiento-horarios">
+                Horarios:
+                {% for h in med.horarios.all %}
+                {{ h.hora|time:"H:i" }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </p>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% else %}
+    <article class="card">
+        <p class="empty-state">No tiene un tratamiento activo registrado.</p>
+    </article>
+    {% endif %}
+
+    <a href="{% url 'paciente:medicamentos_hoy' %}" class="btn btn-primary btn-block">Ir a mis medicinas de hoy</a>
+</section>
+{% endblock %}

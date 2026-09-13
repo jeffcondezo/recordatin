@@ -1,0 +1,22 @@
+<article class="card alarma-card" id="alarma-card">
+    <div class="alarma-card-header">
+        <span class="alarma-icon" aria-hidden="true">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2a7 7 0 0 0-7 7v4.1l-1.4 2.8A1 1 0 0 0 4.6 17h14.8a1 1 0 0 0 .9-1.5L19 13.1V9a7 7 0 0 0-7-7zm0 20a3 3 0 0 0 2.83-2h-5.66A3 3 0 0 0 12 22z"/>
+            </svg>
+        </span>
+        <h2>Alertas en este celular</h2>
+    </div>
+    <p class="lead-text">
+        Reciba un aviso si {{ paciente.nombre }} olvida registrar una medicina
+        o cuando se acerque una cita médica.
+    </p>
+    <p class="alarma-hint">
+        Para mejores resultados: menú del navegador → <strong>Añadir a pantalla de inicio</strong>,
+        luego pulse el botón de abajo.
+    </p>
+    <button type="button" id="btn-activar-alarmas" class="btn btn-accent btn-block btn-lg">
+        Activar alertas en este celular
+    </button>
+    <p id="alarma-status" class="alarma-status" aria-live="polite"></p>
+</article>

@@ -4,14 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#16a34a">
     <title>{% block title %}Recordatin{% endblock %}</title>
+    {% include 'paciente/includes/text_size_head.html' %}
     <link rel="icon" href="{% static 'paciente/img/logo.jpeg' %}" type="image/jpeg">
+    <link rel="manifest" href="{% url 'paciente:web_manifest' %}">
     <link rel="stylesheet" href="{% static 'paciente/css/app.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
     <header class="app-header">
-        <a href="{% url 'paciente:dashboard' %}" class="brand" aria-label="Recordatin — Ir al inicio">
+        <a href="{% url 'paciente:medicamentos_hoy' %}" class="brand" aria-label="Recordatin — Ir a mis medicinas">
             <img src="{% static 'paciente/img/logo.jpeg' %}" alt="Recordatin" class="brand-logo">
         </a>
         {% block header_extra %}{% endblock %}
@@ -38,14 +41,16 @@
         {% block content %}{% endblock %}
     </main>
 
+    <p id="toma-confirm-live" class="visually-hidden" aria-live="assertive"></p>
+
     <nav class="bottom-nav" aria-label="Menú principal">
-        <a href="{% url 'paciente:dashboard' %}" class="nav-item {% if nav_active == 'inicio' %}active{% endif %}">
-            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
-            <span>Inicio</span>
-        </a>
-        <a href="{% url 'paciente:medicamentos_hoy' %}" class="nav-item {% if nav_active == 'hoy' %}active{% endif %}">
+        <a href="{% url 'paciente:medicamentos_hoy' %}" class="nav-item {% if nav_active == 'inicio' %}active{% endif %}" aria-label="Mis medicinas de hoy">
             <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
             <span>Medicinas</span>
+        </a>
+        <a href="{% url 'paciente:tratamiento' %}" class="nav-item {% if nav_active == 'tratamiento' %}active{% endif %}">
+            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+            <span>Tratamiento</span>
         </a>
         <a href="{% url 'paciente:historial' %}" class="nav-item {% if nav_active == 'historial' %}active{% endif %}">
             <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
@@ -61,10 +66,16 @@
         </a>
     </nav>
 
+    {% if user.is_authenticated and vapid_public_key %}
+    {{ vapid_public_key|json_script:"vapid-public-key" }}
+    {% endif %}
     {% if recordatorios %}
     {{ recordatorios|json_script:"recordatorios-data" }}
-    <script src="{% static 'paciente/js/reminders.js' %}"></script>
     {% endif %}
+    {% if user.is_authenticated %}
+    <script src="{% static 'paciente/js/alarmas.js' %}"></script>
+    {% endif %}
+    <script src="{% static 'paciente/js/text-size.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

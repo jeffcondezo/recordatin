@@ -1,0 +1,24 @@
+<section class="contador-dias" aria-labelledby="contador-dias-titulo-{{ contador_id|default:'main' }}">
+    <h2 id="contador-dias-titulo-{{ contador_id|default:'main' }}" class="contador-dias-titulo">
+        Días cumpliendo
+    </h2>
+    <p class="contador-dias-numero" aria-live="polite">{{ dias_cumplidos }}</p>
+    <p class="contador-dias-resumen">
+        {% if dias_cumplidos == 0 %}
+        Aún no tiene días cumplidos. Tome todas sus medicinas a tiempo para sumar el primero.
+        {% elif dias_cumplidos == 1 %}
+        Lleva <strong>1 día</strong> cumpliendo con todas sus medicinas a tiempo.
+        {% else %}
+        Lleva <strong>{{ dias_cumplidos }} días</strong> cumpliendo con todas sus medicinas a tiempo.
+        {% endif %}
+    </p>
+    {% if recompensa_ayer == 'exito' %}
+    <p class="contador-dias-mensaje contador-dias-mensaje-exito" role="status">
+        ¡Ayer sumó 1 día al contador!
+    </p>
+    {% elif recompensa_ayer == 'fallo' %}
+    <p class="contador-dias-mensaje contador-dias-mensaje-fallo" role="status">
+        Ayer no sumó al contador.
+    </p>
+    {% endif %}
+</section>

@@ -1,0 +1,25 @@
+{
+  "name": "Recordatin",
+  "short_name": "Recordatin",
+  "description": "Recordatorios de medicamentos",
+  "start_url": "/paciente/medicamentos/hoy/",
+  "scope": "/paciente/",
+  "display": "standalone",
+  "background_color": "#f0fdf4",
+  "theme_color": "#16a34a",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/static/paciente/img/logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/paciente/img/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

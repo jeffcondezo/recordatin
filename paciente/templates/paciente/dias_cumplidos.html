@@ -1,0 +1,46 @@
+{% extends 'paciente/base.html' %}
+
+{% block title %}Días cumplidos — Recordatin{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title">Días cumpliendo con sus fármacos</h1>
+    <p class="lead-text">
+        Cada día en que toma todas sus medicinas a tiempo suma 1 al contador.
+    </p>
+
+    <article class="card contador-dias-card">
+        {% include 'paciente/includes/contador_dias.html' with contador_id='detalle' %}
+    </article>
+
+    <article class="card">
+        <h2>¿Cómo suma un día?</h2>
+        <p class="lead-text">
+            Tome <strong>todas</strong> las medicinas del día y regístrelas
+            <strong>dentro de 15 minutos</strong> de la hora indicada.
+        </p>
+        <p class="lead-text">
+            Si falla alguna o la registra tarde, ese día no suma.
+            Puede seguir registrándolas: lo más importante es su salud.
+        </p>
+    </article>
+
+    {% if recompensas_recientes %}
+    <article class="card">
+        <h2>Últimos días</h2>
+        <ul class="cumplimiento-historial">
+            {% for reg in recompensas_recientes %}
+            <li class="cumplimiento-historial-item cumplimiento-historial-{{ reg.resultado }}">
+                <span>{{ reg.fecha|date:"d/m/Y" }}</span>
+                {% if reg.resultado == 'exito' %}
+                <span>Cumplido (+1)</span>
+                {% else %}
+                <span>No sumó</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </article>
+    {% endif %}
+</section>
+{% endblock %}

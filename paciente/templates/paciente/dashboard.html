@@ -1,4 +1,5 @@
 {% extends 'paciente/base.html' %}
+{% load static %}
 
 {% block title %}Inicio — Recordatin{% endblock %}
 
@@ -10,11 +11,12 @@
 <section class="page-section">
     <h1 class="page-title">Su día de hoy</h1>
 
-    {% if resumen.pendientes > 0 %}
-    <a href="{% url 'paciente:medicamentos_hoy' %}" class="btn btn-accent btn-block cta-primary" aria-label="Ver medicamentos pendientes de hoy">
-        Ver mis medicamentos de hoy ({{ resumen.pendientes }} pendiente{{ resumen.pendientes|pluralize }})
-    </a>
-    {% endif %}
+    <article class="card contador-dias-card">
+        {% include 'paciente/includes/contador_dias.html' with contador_id='dash' %}
+        <a href="{% url 'paciente:dias_cumplidos' %}" class="btn btn-primary btn-block contador-dias-enlace">
+            Ver detalle de días cumplidos
+        </a>
+    </article>
 
     <div class="stats-grid">
         <article class="stat-card">
@@ -38,41 +40,6 @@
         <h2>¡Muy bien!</h2>
         <p class="lead-text">Ya tomó todas sus medicinas de hoy.</p>
     </article>
-    {% endif %}
-
-    {% if proxima_cita %}
-    <article class="card card-highlight">
-        <span class="card-label">Su próxima cita</span>
-        <p class="card-highlight-date">{{ proxima_cita.fecha_hora|date:"l d \d\e F" }}</p>
-        <p class="card-highlight-time">{{ proxima_cita.fecha_hora|time:"H:i" }}</p>
-        <h2>{{ proxima_cita.especialidad }}</h2>
-        <p>{{ proxima_cita.lugar }}</p>
-        <a href="{% url 'paciente:citas' %}" class="card-link">Ver todas mis citas</a>
-    </article>
-    {% endif %}
-
-    <h2 class="section-subtitle">Próximas medicinas</h2>
-    {% if resumen.tomas %}
-    <ul class="med-list med-list-compact">
-        {% for toma in resumen.tomas %}
-        {% if toma.estado != 'tomado' %}
-        <li class="med-item med-item-{{ toma.etiqueta }}">
-            <div class="med-time">{{ toma.hora_programada|time:"H:i" }}</div>
-            <div class="med-info">
-                <strong>{{ toma.medicamento.nombre }}</strong>
-                <span>{{ toma.medicamento.dosis }}</span>
-                <span class="med-tiempo-restante">{{ toma.tiempo_texto }}</span>
-            </div>
-            <span class="badge badge-{{ toma.etiqueta }}">
-                {% if toma.etiqueta == 'atrasado' %}Es hora{% elif toma.etiqueta == 'proximo' %}Próximo{% else %}{{ toma.get_estado_display }}{% endif %}
-            </span>
-        </li>
-        {% endif %}
-        {% endfor %}
-    </ul>
-    <a href="{% url 'paciente:medicamentos_hoy' %}" class="btn btn-primary btn-block">Ver todas mis medicinas de hoy</a>
-    {% else %}
-    <p class="empty-state">Hoy no tiene medicinas programadas.</p>
     {% endif %}
 </section>
 {% endblock %}

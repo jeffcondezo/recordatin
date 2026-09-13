@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+import secrets
 
 
 class Paciente(models.Model):
@@ -14,6 +15,17 @@ class Paciente(models.Model):
     fecha_nacimiento = models.DateField(null=True, blank=True)
     diagnostico_principal = models.TextField(blank=True)
     activo = models.BooleanField(default=True)
+    dias_cumplidos = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Días cumpliendo con fármacos',
+    )
+    token_acceso = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        blank=True,
+        verbose_name='Token de acceso QR',
+    )
 
     class Meta:
         verbose_name = 'Paciente'
@@ -21,6 +33,16 @@ class Paciente(models.Model):
 
     def __str__(self):
         return f'{self.nombre} {self.apellidos}'
+
+    def regenerar_token_acceso(self):
+        self.token_acceso = secrets.token_urlsafe(32)
+        self.save(update_fields=['token_acceso'])
+        return self.token_acceso
+
+    def save(self, *args, **kwargs):
+        if not self.token_acceso:
+            self.token_acceso = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
 
 
 class Prescripcion(models.Model):
@@ -136,6 +158,21 @@ class TomaMedicamento(models.Model):
         default=ESTADO_PENDIENTE,
     )
     hora_registrada = models.DateTimeField(null=True, blank=True)
+    a_tiempo = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text='True si se registró dentro de los 15 min tras la hora programada.',
+    )
+    alarma_enviada_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Cuándo se envió la notificación push de alarma para esta toma.',
+    )
+    alerta_cuidador_enviada_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Cuándo se avisó a los cuidadores que no se registró la toma.',
+    )
 
     class Meta:
         verbose_name = 'Toma de medicamento'
@@ -176,6 +213,11 @@ class CitaMedica(models.Model):
         choices=ESTADO_CHOICES,
         default=ESTADO_PROGRAMADA,
     )
+    recordatorio_cuidador_enviado_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Cuándo se envió el recordatorio push a los cuidadores.',
+    )
 
     class Meta:
         verbose_name = 'Cita médica'
@@ -184,3 +226,104 @@ class CitaMedica(models.Model):
 
     def __str__(self):
         return f'{self.especialidad} — {self.fecha_hora:%d/%m/%Y %H:%M}'
+
+
+class Cuidador(models.Model):
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.CASCADE,
+        related_name='cuidadores',
+    )
+    nombre = models.CharField(max_length=100, default='Familiar')
+    token_acceso = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        blank=True,
+        verbose_name='Token de acceso QR',
+    )
+    activo = models.BooleanField(default=True)
+    vinculado_en = models.DateTimeField(auto_now_add=True)
+    ultimo_acceso = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Cuidador'
+        verbose_name_plural = 'Cuidadores'
+        ordering = ['-vinculado_en']
+
+    def __str__(self):
+        return f'{self.nombre} — {self.paciente}'
+
+    def regenerar_token_acceso(self):
+        self.token_acceso = secrets.token_urlsafe(32)
+        self.save(update_fields=['token_acceso'])
+        return self.token_acceso
+
+    def save(self, *args, **kwargs):
+        if not self.token_acceso:
+            self.token_acceso = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
+
+
+class RegistroRecompensaDiaria(models.Model):
+    RESULTADO_EXITO = 'exito'
+    RESULTADO_FALLO = 'fallo'
+    RESULTADO_SIN_TOMAS = 'sin_tomas'
+    RESULTADO_CHOICES = [
+        (RESULTADO_EXITO, 'Éxito'),
+        (RESULTADO_FALLO, 'Fallo'),
+        (RESULTADO_SIN_TOMAS, 'Sin tomas'),
+    ]
+
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.CASCADE,
+        related_name='recompensas_diarias',
+    )
+    fecha = models.DateField()
+    resultado = models.CharField(max_length=20, choices=RESULTADO_CHOICES)
+    dias_antes = models.PositiveIntegerField()
+    dias_despues = models.PositiveIntegerField()
+    procesado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Registro de cumplimiento diario'
+        verbose_name_plural = 'Registros de cumplimiento diario'
+        ordering = ['-fecha']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['paciente', 'fecha'],
+                name='unique_recompensa_por_dia',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.paciente} — {self.fecha} ({self.get_resultado_display()})'
+
+
+class SuscripcionPush(models.Model):
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.CASCADE,
+        related_name='push_subscriptions',
+    )
+    cuidador = models.ForeignKey(
+        Cuidador,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='push_subscriptions',
+    )
+    endpoint = models.TextField(unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    user_agent = models.CharField(max_length=255, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Suscripción push'
+        verbose_name_plural = 'Suscripciones push'
+
+    def __str__(self):
+        return f'Push {self.paciente} — {self.endpoint[:48]}…'

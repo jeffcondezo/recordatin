@@ -6,12 +6,15 @@ from django.utils import timezone
 
 from core.models import (
     CitaMedica,
+    Cuidador,
     HorarioToma,
     MedicamentoPrescrito,
     Paciente,
     Prescripcion,
+    RegistroRecompensaDiaria,
     TomaMedicamento,
 )
+from paciente.qr import url_acceso_cuidador, url_acceso_paciente
 from paciente.services import generar_tomas_del_dia
 
 User = get_user_model()
@@ -46,9 +49,11 @@ class Command(BaseCommand):
                 'fecha_nacimiento': date(1965, 3, 15),
                 'diagnostico_principal': 'Diabetes mellitus tipo 2, hipertensión arterial',
                 'activo': True,
+                'dias_cumplidos': 3,
             },
         )
 
+        RegistroRecompensaDiaria.objects.filter(paciente=paciente).delete()
         Prescripcion.objects.filter(paciente=paciente).delete()
         CitaMedica.objects.filter(paciente=paciente).delete()
         TomaMedicamento.objects.filter(paciente=paciente).delete()
@@ -115,6 +120,7 @@ class Command(BaseCommand):
                         datetime.combine(fecha, toma.hora_programada)
                     )
                     toma.hora_registrada = dt + timedelta(minutes=5)
+                    toma.a_tiempo = True
                     toma.save()
                 elif i % 4 == 2:
                     toma.estado = TomaMedicamento.ESTADO_OMITIDO
@@ -144,7 +150,20 @@ class Command(BaseCommand):
             estado=CitaMedica.ESTADO_COMPLETADA,
         )
 
+        cuidador, _ = Cuidador.objects.update_or_create(
+            paciente=paciente,
+            token_acceso='demo-cuidador-token-fijo-seed',
+            defaults={
+                'nombre': 'Ana (familiar demo)',
+                'activo': True,
+            },
+        )
+
         self.stdout.write(self.style.SUCCESS('Datos de demostración creados.'))
-        self.stdout.write(f'  Usuario: {username}')
+        self.stdout.write(f'  Usuario (respaldo técnico): {username}')
         self.stdout.write(f'  Contraseña: {password}')
         self.stdout.write(f'  Paciente: {paciente}')
+        if not paciente.token_acceso:
+            paciente.save()
+        self.stdout.write(f'  Acceso QR paciente: {url_acceso_paciente(paciente)}')
+        self.stdout.write(f'  Acceso QR cuidador: {url_acceso_cuidador(cuidador)}')

@@ -1,22 +1,40 @@
 {% extends 'paciente/base.html' %}
+{% load static %}
 
 {% block title %}Mis medicinas de hoy — Recordatin{% endblock %}
+
+{% block header_extra %}
+<p class="greeting">Hola, {{ paciente.nombre }}</p>
+{% endblock %}
 
 {% block content %}
 <section class="page-section">
     <h1 class="page-title">Mis medicinas de hoy</h1>
     <p class="page-subtitle">{{ resumen.total }} medicina{{ resumen.total|pluralize }} programada{{ resumen.total|pluralize }} para hoy</p>
 
+    {% include 'paciente/includes/activar_alarmas.html' %}
+
+    {% if resumen.tardias_pendientes > 0 %}
+    <article class="card card-aliento-tarde" role="note">
+        <h2>¿Se la tomó tarde?</h2>
+        <p class="lead-text">
+            No se preocupe. <strong>Lo más importante es que tome sus medicinas</strong>
+            y las registre aquí, aunque haya pasado la hora.
+        </p>
+    </article>
+    {% endif %}
+
     {% if resumen.tomas %}
     <ul class="med-list">
         {% for toma in resumen.tomas %}
-        <li class="med-card med-card-{{ toma.etiqueta }}">
+        <li class="med-card med-card-{{ toma.etiqueta }}{% if toma.ventana_cerrada and toma.estado != 'tomado' %} med-card-tarde{% endif %}">
             <div class="med-card-header">
                 <span class="med-time-lg">{{ toma.hora_programada|time:"H:i" }}</span>
                 <span class="badge badge-{{ toma.etiqueta }}">
                     {% if toma.etiqueta == 'tomado' %}Ya tomado
-                    {% elif toma.etiqueta == 'atrasado' %}Es hora de tomarlo
-                    {% elif toma.etiqueta == 'proximo' %}Próximo
+                    {% elif toma.ventana_cerrada %}Puede registrarla
+                    {% elif toma.etiqueta == 'atrasado' %}Es hora de tomarla
+                    {% elif toma.etiqueta == 'proximo' %}Próxima
                     {% else %}Pendiente{% endif %}
                 </span>
             </div>
@@ -25,19 +43,27 @@
             {% if toma.estado != 'tomado' %}
             <p class="med-tiempo-restante" aria-live="polite">{{ toma.tiempo_texto }}</p>
             {% endif %}
+            {% if toma.ventana_cerrada and toma.estado != 'tomado' %}
+            <p class="med-aliento-tarde">
+                ¿Se la tomó tarde? <strong>No se preocupe, regístrela aquí.</strong>
+            </p>
+            {% endif %}
             {% if toma.medicamento.instrucciones %}
             <p class="med-instrucciones">{{ toma.medicamento.instrucciones }}</p>
             {% endif %}
             {% if toma.estado != 'tomado' %}
             <form method="post" action="{% url 'paciente:marcar_tomado' toma.pk %}" class="med-form">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-success btn-block" aria-label="Registrar que tomó {{ toma.medicamento.nombre }}">
-                    Ya lo tomé
+                <button type="submit" class="btn btn-success btn-block" aria-label="Registrar que tomó {{ toma.medicamento.nombre }}{% if toma.ventana_cerrada %}, aunque sea tarde{% endif %}">
+                    {% if toma.ventana_cerrada %}Registré mi medicina{% else %}Ya lo tomé{% endif %}
                 </button>
             </form>
             {% else %}
             <p class="med-tomado-at">
                 Registrado a las {{ toma.hora_registrada|time:"H:i" }}
+                {% if toma.a_tiempo is False %}
+                <span class="med-tomado-tarde-nota">— gracias por registrarla</span>
+                {% endif %}
             </p>
             {% endif %}
         </li>
@@ -48,5 +74,29 @@
         <p class="empty-state">Hoy no tiene medicinas programadas.</p>
     </article>
     {% endif %}
+
+    {% if prescripcion %}
+    <article class="card tratamiento-resumen">
+        <h2>Mi tratamiento</h2>
+        <p class="lead-text">
+            Médico: <strong>{{ prescripcion.medico_nombre }}</strong>
+        </p>
+        {% if prescripcion.indicaciones_generales %}
+        <p class="tratamiento-indicaciones">{{ prescripcion.indicaciones_generales }}</p>
+        {% endif %}
+        {% if medicamentos_tratamiento %}
+        <ul class="tratamiento-lista-compacta">
+            {% for med in medicamentos_tratamiento %}
+            <li><strong>{{ med.nombre }}</strong> — {{ med.dosis }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        <a href="{% url 'paciente:tratamiento' %}" class="btn btn-primary btn-block">Ver tratamiento completo</a>
+    </article>
+    {% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'paciente/js/confirmar-toma.js' %}"></script>
 {% endblock %}

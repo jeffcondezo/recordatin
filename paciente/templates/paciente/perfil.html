@@ -6,6 +6,12 @@
 <section class="page-section">
     <h1 class="page-title">Mi perfil</h1>
 
+    <p class="lead-text">
+        <a href="{% url 'paciente:medicamentos_hoy' %}">Ir a mis medicinas y alarmas</a>
+        ·
+        <a href="{% url 'paciente:dashboard' %}">Ver resumen del día</a>
+    </p>
+
     <article class="card perfil-card">
         <div class="perfil-avatar" aria-hidden="true">{{ paciente.nombre|slice:":1" }}{{ paciente.apellidos|slice:":1" }}</div>
         <h2>{{ paciente.nombre }} {{ paciente.apellidos }}</h2>
@@ -15,6 +21,33 @@
         {% if paciente.fecha_nacimiento %}
         <p class="text-muted"><strong>Nacimiento:</strong> {{ paciente.fecha_nacimiento|date:"d/m/Y" }}</p>
         {% endif %}
+    </article>
+
+    <article class="card contador-dias-card">
+        {% include 'paciente/includes/contador_dias.html' with contador_id='perfil' %}
+        <a href="{% url 'paciente:dias_cumplidos' %}" class="btn btn-primary btn-block contador-dias-enlace">Ver detalle de días cumplidos</a>
+        <p class="lead-text">
+            Si toma <strong>todas</strong> sus medicinas del día y las registra
+            <strong>dentro de 15 minutos</strong> de la hora indicada, suma 1 día al contador.
+        </p>
+        <p class="lead-text">
+            Si falla alguna o la registra tarde, ese día no suma.
+            Puede seguir registrándolas: lo más importante es su salud.
+        </p>
+    </article>
+
+    <article class="card">
+        <h2>Probar notificaciones</h2>
+        <p class="lead-text">
+            Envíe un aviso de prueba a este celular. Primero active las alarmas
+            en <a href="{% url 'paciente:medicamentos_hoy' %}">Mis medicinas</a>.
+        </p>
+        <form method="post" action="{% url 'paciente:probar_notificacion' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-accent btn-block">
+                Probar notificación
+            </button>
+        </form>
     </article>
 
     {% if paciente.diagnostico_principal %}
@@ -27,6 +60,56 @@
     <article class="card">
         <h2>Su tratamiento</h2>
         <p>Tiene <strong>{{ prescripciones_activas }}</strong> receta{{ prescripciones_activas|pluralize }} activa{{ prescripciones_activas|pluralize }}.</p>
+    </article>
+
+    {% include 'paciente/includes/ajuste_texto.html' %}
+
+    <article class="card cuidadores-card">
+        <h2>Familiares y cuidadores</h2>
+        <p class="lead-text">
+            Puede invitar a un familiar para que reciba alertas si olvida registrar
+            una medicina y para que le ayude con sus citas médicas.
+        </p>
+
+        {% if invitacion_qr_base64 %}
+        <div class="invitacion-qr-block">
+            <p class="card-label">Código para su familiar</p>
+            <img
+                src="data:image/png;base64,{{ invitacion_qr_base64 }}"
+                alt="Código QR de invitación para cuidador"
+                class="invitacion-qr-img"
+            >
+            <p class="text-muted invitacion-url">{{ invitacion_url }}</p>
+            <p class="lead-text">Muestre este código a su familiar para que escanee con la cámara del celular.</p>
+        </div>
+        {% endif %}
+
+        {% if cuidadores_activos %}
+        <ul class="cuidadores-list">
+            {% for c in cuidadores_activos %}
+            <li class="cuidador-item">
+                <div>
+                    <strong>{{ c.nombre }}</strong>
+                    <p class="text-muted">Desde {{ c.vinculado_en|date:"d/m/Y" }}</p>
+                </div>
+                <form method="post" action="{% url 'paciente:perfil' %}" onsubmit="return confirm('¿Dejar de compartir con este familiar?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="revocar">
+                    <input type="hidden" name="cuidador_id" value="{{ c.pk }}">
+                    <button type="submit" class="btn btn-danger-outline btn-sm">Dejar de compartir</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">Aún no hay familiares enlazados.</p>
+        {% endif %}
+
+        <form method="post" action="{% url 'paciente:perfil' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="invitar">
+            <button type="submit" class="btn btn-primary btn-block">Invitar familiar</button>
+        </form>
     </article>
 
     <form method="post" action="{% url 'logout' %}">

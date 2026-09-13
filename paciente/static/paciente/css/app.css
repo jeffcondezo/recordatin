@@ -19,9 +19,20 @@
     --font-stat: 2.5rem;
     --radius: 16px;
     --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    --nav-height: 76px;
+    --nav-height: 88px;
     --header-height: 72px;
-    --touch-min: 52px;
+    --touch-min: 56px;
+    --touch-gap: 14px;
+}
+
+html[data-text-size="large"] {
+    --font-base: 22px;
+}
+
+html[data-text-size="xlarge"] {
+    --font-base: 26px;
+    --touch-min: 60px;
+    --nav-height: 96px;
 }
 
 *,
@@ -41,7 +52,7 @@ body {
     color: var(--color-text);
     line-height: 1.6;
     min-height: 100vh;
-    padding-bottom: calc(var(--nav-height) + 20px);
+    padding-bottom: calc(var(--nav-height) + 24px + env(safe-area-inset-bottom, 0px));
 }
 
 :focus-visible {
@@ -131,6 +142,150 @@ body {
     font-size: 1.15rem;
     color: var(--color-text-muted);
     margin: 0;
+}
+
+.lead-text + .lead-text {
+    margin-top: 12px;
+}
+
+/* Contador de días cumplidos */
+.contador-dias-card {
+    border: 3px solid #86efac;
+    background: linear-gradient(145deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.contador-dias {
+    text-align: center;
+}
+
+.contador-dias-titulo {
+    margin: 0 0 8px;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.contador-dias-numero {
+    margin: 0;
+    font-size: clamp(3rem, 12vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--color-success);
+}
+
+.contador-dias-resumen {
+    margin: 12px 0 0;
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+.contador-dias-mensaje {
+    margin: 12px 0 0;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.contador-dias-mensaje-exito {
+    background: var(--color-success-light);
+    color: #14532d;
+}
+
+.contador-dias-mensaje-fallo {
+    background: var(--color-warning-light);
+    color: #9a3412;
+}
+
+.contador-dias-enlace {
+    margin-top: 12px;
+}
+
+.cumplimiento-historial {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cumplimiento-historial-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.cumplimiento-historial-exito {
+    background: var(--color-success-light);
+    color: #14532d;
+}
+
+.cumplimiento-historial-fallo {
+    background: var(--color-warning-light);
+    color: #9a3412;
+}
+
+/* Alarmas push / PWA */
+.alarma-card {
+    border: 2px solid #fbbf24;
+    background: #fffbeb;
+}
+
+.alarma-card-activa {
+    border-color: var(--color-success);
+    background: var(--color-success-light);
+}
+
+.alarma-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.alarma-card-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.alarma-icon {
+    color: #b45309;
+    flex-shrink: 0;
+}
+
+.alarma-card-activa .alarma-icon {
+    color: var(--color-success);
+}
+
+.alarma-hint {
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+    margin: 0 0 16px;
+    line-height: 1.45;
+}
+
+.alarma-status {
+    margin: 12px 0 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #14532d;
+}
+
+.alarma-status-error {
+    color: #9a3412;
+}
+
+.btn-lg {
+    min-height: calc(var(--touch-min) + 4px);
+    padding: 16px 24px;
+    font-size: 1.2rem;
 }
 
 /* Messages & alerts */
@@ -336,7 +491,8 @@ body {
     align-items: center;
     justify-content: center;
     min-height: var(--touch-min);
-    padding: 14px 24px;
+    min-width: var(--touch-min);
+    padding: 16px 24px;
     border: none;
     border-radius: var(--radius);
     font-size: 1.15rem;
@@ -345,6 +501,8 @@ body {
     text-align: center;
     text-decoration: none;
     transition: background 0.15s ease, transform 0.1s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn:active {
@@ -423,7 +581,7 @@ body {
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--touch-gap);
 }
 
 .med-list-compact .med-item {
@@ -487,7 +645,7 @@ body {
     background: var(--color-surface);
     border: 2px solid var(--color-border);
     border-radius: var(--radius);
-    padding: 20px;
+    padding: 22px 20px;
     box-shadow: var(--shadow);
     list-style: none;
 }
@@ -500,6 +658,42 @@ body {
 .med-card-atrasado {
     border-color: var(--color-warning);
     background: var(--color-warning-light);
+}
+
+.med-card-tarde {
+    border-color: #d97706;
+    background: #fff7ed;
+}
+
+.med-aliento-tarde {
+    margin: 0 0 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #fffbeb;
+    border: 2px solid #fbbf24;
+    font-size: 1.1rem;
+    line-height: 1.5;
+    color: #78350f;
+}
+
+.card-aliento-tarde {
+    border: 2px solid #fbbf24;
+    background: #fffbeb;
+    margin-bottom: 4px;
+}
+
+.card-aliento-tarde h2 {
+    margin: 0 0 8px;
+    font-size: 1.25rem;
+    color: #92400e;
+}
+
+.med-tomado-tarde-nota {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #92400e;
 }
 
 .med-card-proximo {
@@ -554,7 +748,15 @@ body {
 }
 
 .med-form {
-    margin-top: 16px;
+    margin-top: 20px;
+    padding-top: 4px;
+}
+
+.med-form .btn {
+    min-height: calc(var(--touch-min) + 6px);
+    padding: 18px 24px;
+    font-size: 1.2rem;
+    letter-spacing: 0.01em;
 }
 
 /* Filters */
@@ -566,7 +768,8 @@ body {
 .filter-btn {
     flex: 1;
     min-height: var(--touch-min);
-    padding: 12px 16px;
+    min-width: var(--touch-min);
+    padding: 14px 18px;
     text-align: center;
     background: var(--color-surface);
     border: 2px solid var(--color-border);
@@ -708,34 +911,46 @@ body {
     transform: translateX(-50%);
     width: 100%;
     max-width: 520px;
-    height: var(--nav-height);
+    min-height: var(--nav-height);
+    height: auto;
     background: var(--color-surface);
     border-top: 2px solid var(--color-border);
     display: flex;
-    justify-content: space-around;
+    justify-content: stretch;
     align-items: stretch;
+    gap: 6px;
     z-index: 200;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-    padding: 0 4px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
 }
 
 .nav-item {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
     text-decoration: none;
     color: var(--color-text-muted);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    padding: 8px 4px;
-    min-height: var(--touch-min);
+    padding: 10px 6px;
+    min-height: calc(var(--touch-min) + 8px);
+    border-radius: 12px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.nav-item:active {
+    background: rgba(37, 99, 235, 0.08);
 }
 
 .nav-item.active {
     color: var(--color-primary);
+    background: rgba(37, 99, 235, 0.1);
 }
 
 .nav-item.active .nav-svg {
@@ -743,23 +958,148 @@ body {
 }
 
 .nav-svg {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
     stroke: var(--color-text-muted);
 }
 
 .nav-item span:last-child {
-    font-size: 0.7rem;
-    letter-spacing: 0.02em;
+    font-size: 0.78rem;
+    line-height: 1.15;
+    letter-spacing: 0.01em;
+    text-align: center;
+    max-width: 100%;
+    word-break: break-word;
+    hyphens: auto;
 }
 
 @media (min-width: 400px) {
     .nav-item span:last-child {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .bottom-nav {
+        gap: 8px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .nav-item {
+        padding: 10px 8px;
     }
 }
 
 /* Login */
+/* Entrada por QR */
+.entrada-page {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+}
+
+.entrada-container {
+    width: 100%;
+    max-width: 420px;
+}
+
+.entrada-brand {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.entrada-logo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 12px;
+}
+
+.entrada-brand h1 {
+    margin: 0 0 8px;
+    font-size: 1.75rem;
+    font-weight: 800;
+}
+
+.entrada-lead {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--color-text-muted);
+}
+
+.entrada-instrucciones h2 {
+    margin: 0 0 12px;
+    font-size: 1.35rem;
+}
+
+.entrada-texto {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    margin: 0 0 16px;
+}
+
+.entrada-pasos {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.entrada-pasos li {
+    margin-bottom: 10px;
+}
+
+.entrada-ayuda {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 1rem;
+}
+
+.tratamiento-card h2,
+.tratamiento-resumen h2 {
+    margin-top: 0;
+}
+
+.tratamiento-indicaciones {
+    font-size: 1.05rem;
+    line-height: 1.5;
+    margin: 12px 0 0;
+}
+
+.tratamiento-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tratamiento-med h3 {
+    margin: 0 0 6px;
+    font-size: 1.15rem;
+}
+
+.tratamiento-horarios {
+    margin: 8px 0 0;
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+}
+
+.tratamiento-lista-compacta {
+    margin: 12px 0 16px;
+    padding-left: 1.25rem;
+    font-size: 1.05rem;
+}
+
+.tratamiento-resumen {
+    margin-top: 20px;
+}
+
 .login-page {
     display: flex;
     align-items: center;
@@ -839,3 +1179,231 @@ body {
     font-size: 1.15rem;
     color: var(--color-text-muted);
 }
+
+/* Ajuste global de tamaño de texto */
+.text-size-card h2 {
+    margin: 0 0 8px;
+    font-size: 1.3rem;
+}
+
+.text-size-desc {
+    margin: 0 0 16px;
+    font-size: 1.05rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+.text-size-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--touch-gap);
+    margin-bottom: 16px;
+}
+
+.text-size-btn {
+    min-height: calc(var(--touch-min) + 4px);
+    padding: 16px 20px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.text-size-btn:hover,
+.text-size-btn:focus-visible {
+    border-color: var(--color-primary);
+}
+
+.text-size-btn.active {
+    border-color: var(--color-primary);
+    background: #eff6ff;
+    color: var(--color-primary-dark);
+}
+
+.text-size-preview {
+    margin: 0;
+    padding: 16px;
+    border-radius: var(--radius);
+    background: rgba(0, 0, 0, 0.04);
+    border: 2px dashed var(--color-border);
+}
+
+.text-size-preview-label {
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.text-size-preview-name {
+    margin: 0 0 4px;
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+
+.text-size-preview-dosis {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+.text-size-preview-instrucciones {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.5;
+}
+
+.text-size-status {
+    margin: 12px 0 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-success);
+    min-height: 1.5em;
+}
+
+/* Portal cuidador */
+.cuidador-app .cuidador-header {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.cuidador-badge {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1d4ed8;
+    background: #dbeafe;
+    padding: 6px 12px;
+    border-radius: 999px;
+}
+
+.cuidador-nav .nav-item-form {
+    flex: 1;
+    display: flex;
+    margin: 0;
+}
+
+.cuidador-nav .nav-item-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    color: inherit;
+}
+
+.banner-cuidador {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.med-list-readonly .med-card {
+    pointer-events: none;
+}
+
+.cuidadores-card .cuidadores-list {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+}
+
+.cuidador-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.cuidador-item:last-child {
+    border-bottom: none;
+}
+
+.invitacion-qr-block {
+    text-align: center;
+    margin: 16px 0;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: var(--radius-md);
+}
+
+.invitacion-qr-img {
+    max-width: 220px;
+    height: auto;
+    margin: 8px auto;
+    display: block;
+}
+
+.invitacion-url {
+    word-break: break-all;
+    font-size: 0.85rem;
+}
+
+.page-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.cita-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.inline-form {
+    display: inline;
+}
+
+.btn-danger-outline {
+    background: transparent;
+    color: #b91c1c;
+    border: 2px solid #fca5a5;
+}
+
+.btn-danger-outline:hover {
+    background: #fef2f2;
+}
+
+.cuidador-form .form-group {
+    margin-bottom: 16px;
+}
+
+.cuidador-form label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.cuidador-form .form-input {
+    width: 100%;
+    min-height: var(--touch-min);
+    padding: 12px;
+    font-size: 1rem;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+}
+
+.form-error {
+    color: #b91c1c;
+    margin: 4px 0 0;
+    font-size: 0.95rem;
+}
+
+.badge-programada { background: #dbeafe; color: #1d4ed8; }
+.badge-cancelada { background: #fee2e2; color: #b91c1c; }
+.badge-completada { background: #d1fae5; color: #047857; }
