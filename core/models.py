@@ -19,6 +19,60 @@ class Paciente(models.Model):
         default=0,
         verbose_name='Días cumpliendo con fármacos',
     )
+    codigo_estudio = models.CharField(
+        max_length=20,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name='Código de estudio',
+    )
+    GRUPO_INTERVENCION = 'intervencion'
+    GRUPO_CONTROL = 'control'
+    GRUPO_CHOICES = [
+        (GRUPO_INTERVENCION, 'Intervención (app + notificaciones)'),
+        (GRUPO_CONTROL, 'Control'),
+    ]
+    grupo = models.CharField(
+        max_length=20,
+        choices=GRUPO_CHOICES,
+        default=GRUPO_INTERVENCION,
+        db_index=True,
+        verbose_name='Grupo del estudio',
+    )
+    SEXO_M = 'M'
+    SEXO_F = 'F'
+    SEXO_O = 'O'
+    SEXO_CHOICES = [
+        (SEXO_M, 'Masculino'),
+        (SEXO_F, 'Femenino'),
+        (SEXO_O, 'Otro / no especifica'),
+    ]
+    sexo = models.CharField(
+        max_length=1,
+        choices=SEXO_CHOICES,
+        blank=True,
+        verbose_name='Sexo',
+    )
+    fecha_ingreso_estudio = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Fecha de ingreso al estudio',
+    )
+    primer_acceso = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Primer acceso a la aplicación',
+        help_text='Se registra automáticamente la primera vez que el paciente inicia sesión.',
+    )
+    mmas_seguimiento_solicitado = models.BooleanField(
+        default=False,
+        verbose_name='Solicitar MMAS-8 de seguimiento al entrar',
+        help_text=(
+            'Si está activo, al iniciar sesión el paciente verá el cuestionario '
+            'de seguimiento (si aún no lo ha respondido).'
+        ),
+    )
     token_acceso = models.CharField(
         max_length=64,
         unique=True,
@@ -32,7 +86,17 @@ class Paciente(models.Model):
         verbose_name_plural = 'Pacientes'
 
     def __str__(self):
+        if self.codigo_estudio:
+            return f'{self.codigo_estudio} — {self.nombre} {self.apellidos}'
         return f'{self.nombre} {self.apellidos}'
+
+    @property
+    def es_control(self):
+        return self.grupo == self.GRUPO_CONTROL
+
+    @property
+    def es_intervencion(self):
+        return self.grupo == self.GRUPO_INTERVENCION
 
     def regenerar_token_acceso(self):
         self.token_acceso = secrets.token_urlsafe(32)
@@ -299,6 +363,63 @@ class RegistroRecompensaDiaria(models.Model):
 
     def __str__(self):
         return f'{self.paciente} — {self.fecha} ({self.get_resultado_display()})'
+
+
+class EvaluacionMMAS8(models.Model):
+    MOMENTO_BASAL = 'basal'
+    MOMENTO_SEGUIMIENTO = 'seguimiento'
+    MOMENTO_CHOICES = [
+        (MOMENTO_BASAL, 'Basal (inicio)'),
+        (MOMENTO_SEGUIMIENTO, 'Seguimiento'),
+    ]
+
+    CATEGORIA_ALTA = 'alta'
+    CATEGORIA_MEDIA = 'media'
+    CATEGORIA_BAJA = 'baja'
+    CATEGORIA_CHOICES = [
+        (CATEGORIA_ALTA, 'Adherencia alta'),
+        (CATEGORIA_MEDIA, 'Adherencia media'),
+        (CATEGORIA_BAJA, 'Adherencia baja'),
+    ]
+
+    ORIGEN_PACIENTE = 'paciente'
+    ORIGEN_ADMIN = 'admin'
+    ORIGEN_CHOICES = [
+        (ORIGEN_PACIENTE, 'Paciente'),
+        (ORIGEN_ADMIN, 'Administrador'),
+    ]
+
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.CASCADE,
+        related_name='evaluaciones_mmas8',
+    )
+    momento = models.CharField(max_length=20, choices=MOMENTO_CHOICES)
+    fecha = models.DateTimeField(auto_now_add=True)
+    respuestas = models.JSONField(
+        help_text='Respuestas MMAS-8: items 1-7 sí/no e item 8 escala 0-4.',
+    )
+    puntaje = models.DecimalField(max_digits=4, decimal_places=2)
+    categoria = models.CharField(max_length=10, choices=CATEGORIA_CHOICES)
+    registrado_por = models.CharField(
+        max_length=20,
+        choices=ORIGEN_CHOICES,
+        default=ORIGEN_PACIENTE,
+    )
+
+    class Meta:
+        verbose_name = 'Evaluación MMAS-8'
+        verbose_name_plural = 'Evaluaciones MMAS-8'
+        ordering = ['momento', '-fecha']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['paciente', 'momento'],
+                name='unique_mmas8_por_momento',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.paciente} — MMAS-8 {self.get_momento_display()} ({self.puntaje})'
 
 
 class SuscripcionPush(models.Model):

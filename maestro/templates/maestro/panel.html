@@ -1,0 +1,196 @@
+{% extends 'maestro/base.html' %}
+
+{% block title %}Pacientes del estudio — Recordatin{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title">Pacientes del estudio</h1>
+
+    <div class="maestro-stats">
+        <article class="stat-card">
+            <span class="stat-value">{{ stats.total }}</span>
+            <span class="stat-label">Total</span>
+        </article>
+        <article class="stat-card">
+            <span class="stat-value">{{ stats.intervencion }}</span>
+            <span class="stat-label">Intervención</span>
+        </article>
+        <article class="stat-card">
+            <span class="stat-value">{{ stats.control }}</span>
+            <span class="stat-label">Control</span>
+        </article>
+    </div>
+
+    <form method="get" class="maestro-filters card">
+        <label for="q">Buscar</label>
+        <input type="search" name="q" id="q" value="{{ q }}" class="form-control"
+               placeholder="Código, nombre o usuario">
+        <label for="grupo">Grupo</label>
+        <select name="grupo" id="grupo" class="form-control">
+            <option value="">Todos</option>
+            <option value="intervencion" {% if grupo == 'intervencion' %}selected{% endif %}>Intervención</option>
+            <option value="control" {% if grupo == 'control' %}selected{% endif %}>Control</option>
+        </select>
+        <label for="mmas">MMAS-8</label>
+        <select name="mmas" id="mmas" class="form-control">
+            <option value="">Todos</option>
+            <option value="sin_basal" {% if mmas == 'sin_basal' %}selected{% endif %}>Sin basal</option>
+            <option value="sin_seguimiento" {% if mmas == 'sin_seguimiento' %}selected{% endif %}>Sin seguimiento</option>
+            <option value="completo" {% if mmas == 'completo' %}selected{% endif %}>Basal + seguimiento</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+    </form>
+
+    <div class="card maestro-table-wrap">
+        <table class="maestro-table maestro-table-wide">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Grupo</th>
+                    <th>MMAS basal</th>
+                    <th>Primer acceso</th>
+                    <th>Días desde basal</th>
+                    <th>Alertas respondidas</th>
+                    <th>% resp./día</th>
+                    <th>% a tiempo/día</th>
+                    <th>Medicinas</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pacientes %}
+                <tr>
+                    <td>{{ p.codigo_estudio|default:"—" }}</td>
+                    <td>{{ p.nombre }} {{ p.apellidos }}</td>
+                    <td>
+                        {% if p.grupo == 'control' %}
+                        <span class="badge badge-control">Control</span>
+                        {% else %}
+                        <span class="badge badge-intervencion">Intervención</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.metricas.basal %}
+                        <strong>{{ p.metricas.basal_puntaje }}</strong>
+                        <span class="text-muted">{{ p.metricas.basal_categoria }}</span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.metricas.primer_acceso %}
+                        {{ p.metricas.primer_acceso|date:"d/m/Y H:i" }}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.metricas.dias_desde_basal is not None %}
+                        {{ p.metricas.dias_desde_basal }} día{{ p.metricas.dias_desde_basal|pluralize }}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ p.metricas.alertas_respondidas }}/{{ p.metricas.alertas_total }}
+                    </td>
+                    <td>
+                        {% if p.metricas.promedio_respuesta_dia is not None %}
+                        {{ p.metricas.promedio_respuesta_dia }}%
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.metricas.promedio_horario_dia is not None %}
+                        {{ p.metricas.promedio_horario_dia }}%
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button
+                            type="button"
+                            class="btn btn-secondary btn-sm btn-meds-popup"
+                            data-paciente="{{ p.nombre }} {{ p.apellidos }}"
+                            data-meds='[{% for m in p.metricas.medicamentos %}{"nombre":"{{ m.nombre|escapejs }}","dosis":"{{ m.dosis|escapejs }}","horarios":"{{ m.horarios|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+                        >
+                            Ver ({{ p.metricas.medicamentos|length }})
+                        </button>
+                    </td>
+                    <td><a href="{% url 'maestro:paciente_detalle' p.pk %}">Detalle</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="11">No hay pacientes con esos filtros.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div id="meds-modal" class="maestro-modal" hidden>
+    <div class="maestro-modal-backdrop" data-cerrar-meds></div>
+    <div class="maestro-modal-panel card" role="dialog" aria-modal="true" aria-labelledby="meds-modal-titulo">
+        <h2 id="meds-modal-titulo" class="page-title">Medicamentos</h2>
+        <p id="meds-modal-paciente" class="text-muted"></p>
+        <ul id="meds-modal-list" class="maestro-med-list"></ul>
+        <p id="meds-modal-vacio" class="text-muted" hidden>Sin medicamentos activos.</p>
+        <button type="button" class="btn btn-primary btn-block" data-cerrar-meds>Cerrar</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var modal = document.getElementById('meds-modal');
+    var tituloPac = document.getElementById('meds-modal-paciente');
+    var list = document.getElementById('meds-modal-list');
+    var vacio = document.getElementById('meds-modal-vacio');
+    if (!modal) return;
+
+    function cerrar() {
+        modal.hidden = true;
+    }
+
+    modal.querySelectorAll('[data-cerrar-meds]').forEach(function (el) {
+        el.addEventListener('click', cerrar);
+    });
+
+    document.querySelectorAll('.btn-meds-popup').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var nombre = btn.getAttribute('data-paciente') || '';
+            var meds = [];
+            try {
+                meds = JSON.parse(btn.getAttribute('data-meds') || '[]');
+            } catch (e) {
+                meds = [];
+            }
+            tituloPac.textContent = nombre;
+            list.innerHTML = '';
+            if (!meds.length) {
+                vacio.hidden = false;
+            } else {
+                vacio.hidden = true;
+                meds.forEach(function (m) {
+                    var li = document.createElement('li');
+                    li.className = 'maestro-med-item';
+                    li.innerHTML = '<div><strong></strong> — <span class="dosis"></span>' +
+                        '<p class="text-muted horarios"></p></div>';
+                    li.querySelector('strong').textContent = m.nombre || '';
+                    li.querySelector('.dosis').textContent = m.dosis || '';
+                    li.querySelector('.horarios').textContent = 'Horarios: ' + (m.horarios || '—');
+                    list.appendChild(li);
+                });
+            }
+            modal.hidden = false;
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') cerrar();
+    });
+})();
+</script>
+{% endblock %}

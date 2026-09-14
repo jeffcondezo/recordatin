@@ -29,3 +29,4 @@ Thumbs.db
 # Local env
 .env
 .env.*
+vapid_private.pem

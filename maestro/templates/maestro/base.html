@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Estudio — Recordatin{% endblock %}</title>
+    <link rel="icon" href="{% static 'paciente/img/icon-192.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'paciente/css/app.css' %}">
+    <link rel="stylesheet" href="{% static 'maestro/css/maestro.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="maestro-body">
+    <header class="maestro-header">
+        <a href="{% url 'maestro:panel' %}" class="maestro-brand">
+            <img src="{% static 'paciente/img/icon-192.png' %}" alt="" class="maestro-logo">
+            <span>Recordatin · Estudio</span>
+        </a>
+        {% if user.is_authenticated and user.is_staff %}
+        <nav class="maestro-nav">
+            <span class="maestro-user">{{ user.username }}</span>
+            <a href="{% url 'maestro:logout' %}" class="btn btn-secondary btn-sm">Salir</a>
+        </nav>
+        {% endif %}
+    </header>
+
+    {% if messages %}
+    <div class="messages" role="status">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main class="maestro-main">
+        {% block content %}{% endblock %}
+    </main>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

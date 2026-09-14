@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar sesión — Recordatin</title>
     {% include 'paciente/includes/text_size_head.html' %}
-    <link rel="icon" href="{% static 'paciente/img/logo.jpeg' %}" type="image/jpeg">
+    <link rel="icon" href="{% static 'paciente/img/icon-192.png' %}" type="image/png">
+    <link rel="apple-touch-icon" href="{% static 'paciente/img/apple-touch-icon.png' %}">
     <link rel="stylesheet" href="{% static 'paciente/css/app.css' %}">
 </head>
 <body class="login-page">
@@ -39,6 +40,11 @@
 
             <button type="submit" class="btn btn-primary btn-block" aria-label="Entrar a la aplicación">Entrar</button>
         </form>
+
+        <p class="text-muted" style="margin-top: 1.5rem; text-align: center;">
+            ¿Investigador del estudio?
+            <a href="{% url 'maestro:login' %}">Entrar al panel</a>
+        </p>
     </main>
     <script src="{% static 'paciente/js/text-size.js' %}"></script>
 </body>

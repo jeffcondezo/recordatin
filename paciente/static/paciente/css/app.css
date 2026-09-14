@@ -1407,3 +1407,98 @@ body {
 .badge-programada { background: #dbeafe; color: #1d4ed8; }
 .badge-cancelada { background: #fee2e2; color: #b91c1c; }
 .badge-completada { background: #d1fae5; color: #047857; }
+
+.mmas8-form .mmas8-item {
+    border: none;
+    margin: 0 0 20px;
+    padding: 0 0 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mmas8-form legend {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    line-height: 1.35;
+}
+
+.mmas8-form ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.mmas8-form li {
+    margin: 8px 0;
+}
+
+.mmas8-form label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.mmas8-form input[type="radio"] {
+    width: 22px;
+    height: 22px;
+}
+
+.mmas-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.mmas-modal-oculto {
+    display: none;
+}
+
+.mmas-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.mmas-modal-panel {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 420px);
+    text-align: center;
+    margin: 0;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+}
+
+.mmas-modal-puntaje {
+    margin: 8px 0 4px;
+    font-size: clamp(2.5rem, 10vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--color-success, #16a34a);
+}
+
+.mmas-modal-categoria {
+    margin: 0 0 12px;
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.mmas-modal-alta .mmas-modal-puntaje,
+.mmas-modal-alta .mmas-modal-categoria {
+    color: #166534;
+}
+
+.mmas-modal-media .mmas-modal-puntaje,
+.mmas-modal-media .mmas-modal-categoria {
+    color: #a16207;
+}
+
+.mmas-modal-baja .mmas-modal-puntaje,
+.mmas-modal-baja .mmas-modal-categoria {
+    color: #b91c1c;
+}

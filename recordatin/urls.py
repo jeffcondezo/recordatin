@@ -13,4 +13,5 @@ urlpatterns = [
     ),
     path('accounts/logout/', logout_view, name='logout'),
     path('paciente/', include('paciente.urls')),
+    path('maestro/', include('maestro.urls')),
 ]

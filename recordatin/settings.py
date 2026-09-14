@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-$j4705+q*)ww0esmju__6!@$+h7r)%(jl&m%wx#((15kgzonr9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver', 'spentor.app']
 
 
 # Application definition
@@ -116,7 +116,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'es'
 
-TIME_ZONE = 'America/Mexico_City'
+TIME_ZONE = 'America/Lima'
 
 USE_I18N = True
 
@@ -127,6 +127,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 LOGIN_URL = 'entrada'
 LOGIN_REDIRECT_URL = 'paciente:medicamentos_hoy'
@@ -140,13 +141,9 @@ SITE_URL = 'http://127.0.0.1:8000'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Web Push (VAPID) — generar nuevas claves en producción: py-vapid / pywebpush
+# Web Push (VAPID) — la privada va en archivo PEM (pywebpush la lee mejor así)
 VAPID_PUBLIC_KEY = (
     'BKzF7emho49M5yPDDV-5OW9iSahrJBnxtfEI5bJvRX5_6AD8dFf0-N0J1AWFjCFzp2zB7T3qqgSTXU1B4crm_VY'
 )
-VAPID_PRIVATE_KEY = """-----BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgD2EAV6wbfDImepeM
-lEZ8bjwBOPcOVRSOX730qEaE6kChRANCAASsxe3poaOPTOcjww1fuTlvYkmoayQZ
-8bXxCOWyb0V+f+gA/HRX9PjdCdQFhYwhc6dswe096qoEk11NQeHK5v1W
------END PRIVATE KEY-----"""
+VAPID_PRIVATE_KEY = str(BASE_DIR / 'vapid_private.pem')
 VAPID_CLAIMS_EMAIL = 'mailto:admin@recordatin.local'

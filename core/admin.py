@@ -10,6 +10,7 @@ from paciente.qr import generar_imagen_qr, url_acceso_paciente
 from .models import (
     CitaMedica,
     Cuidador,
+    EvaluacionMMAS8,
     HorarioToma,
     MedicamentoPrescrito,
     Paciente,
@@ -40,15 +41,25 @@ class MedicamentoPrescritoInline(admin.TabularInline):
 
 @admin.register(Paciente)
 class PacienteAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'apellidos', 'dias_cumplidos', 'user', 'activo', 'tiene_token_qr')
-    search_fields = ('nombre', 'apellidos', 'user__username')
+    list_display = (
+        'codigo_estudio', 'nombre', 'apellidos', 'grupo',
+        'dias_cumplidos', 'user', 'activo', 'tiene_token_qr',
+    )
+    list_filter = ('grupo', 'activo', 'sexo')
+    search_fields = ('nombre', 'apellidos', 'codigo_estudio', 'user__username')
     readonly_fields = ('token_acceso', 'enlace_acceso', 'qr_preview', 'descargar_qr')
     actions = ['regenerar_codigo_qr']
     inlines = [CuidadorInline]
 
     fieldsets = (
         (None, {
-            'fields': ('user', 'nombre', 'apellidos', 'telefono', 'fecha_nacimiento', 'activo', 'dias_cumplidos'),
+            'fields': (
+                'user', 'codigo_estudio', 'nombre', 'apellidos', 'telefono',
+                'fecha_nacimiento', 'sexo', 'activo', 'dias_cumplidos',
+            ),
+        }),
+        ('Estudio', {
+            'fields': ('grupo', 'fecha_ingreso_estudio'),
         }),
         ('Acceso por QR', {
             'fields': ('token_acceso', 'enlace_acceso', 'qr_preview', 'descargar_qr'),
@@ -147,6 +158,16 @@ class RegistroRecompensaDiariaAdmin(admin.ModelAdmin):
         'dias_antes', 'dias_despues', 'procesado_en',
     )
     list_filter = ('resultado', 'fecha')
+
+
+@admin.register(EvaluacionMMAS8)
+class EvaluacionMMAS8Admin(admin.ModelAdmin):
+    list_display = (
+        'paciente', 'momento', 'puntaje', 'categoria',
+        'registrado_por', 'fecha',
+    )
+    list_filter = ('momento', 'categoria', 'registrado_por')
+    search_fields = ('paciente__nombre', 'paciente__codigo_estudio')
 
 
 @admin.register(SuscripcionPush)

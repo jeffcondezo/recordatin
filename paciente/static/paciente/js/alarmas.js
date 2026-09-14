@@ -67,6 +67,8 @@
         var body = item.nombre + ' (' + item.dosis + ')';
         var n = new Notification(title, {
             body: body,
+            icon: '/static/paciente/img/icon-192.png',
+            badge: '/static/paciente/img/badge-96.png',
             tag: 'toma-' + item.id,
             requireInteraction: true,
             vibrate: [300, 100, 300],

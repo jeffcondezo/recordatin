@@ -1,0 +1,116 @@
+{% extends 'paciente/base.html' %}
+
+{% block title %}Cuestionario MMAS-8 — Recordatin{% endblock %}
+
+{% block header_extra %}
+<p class="greeting">Hola, {{ paciente.nombre }}</p>
+{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title">Cuestionario de adherencia</h1>
+    <p class="lead-text">
+        Este cuestionario (MMAS-8) nos ayuda a conocer cómo lleva su tratamiento.
+        Se responde al inicio del estudio y otra vez más adelante.
+    </p>
+
+    {% if paciente.codigo_estudio %}
+    <p class="text-muted">Código de estudio: <strong>{{ paciente.codigo_estudio }}</strong>
+        · {{ paciente.get_grupo_display }}</p>
+    {% endif %}
+
+    <div class="stats-grid">
+        <article class="stat-card">
+            <span class="stat-label">Inicio (basal)</span>
+            {% if basal %}
+            <span class="stat-value">{{ basal.puntaje }}</span>
+            <span class="text-muted">{{ basal.get_categoria_display }}</span>
+            {% else %}
+            <span class="stat-value">—</span>
+            <a href="{% url 'paciente:mmas8' 'basal' %}" class="btn btn-accent btn-block">Completar ahora</a>
+            {% endif %}
+        </article>
+        <article class="stat-card">
+            <span class="stat-label">Seguimiento</span>
+            {% if seguimiento %}
+            <span class="stat-value">{{ seguimiento.puntaje }}</span>
+            <span class="text-muted">{{ seguimiento.get_categoria_display }}</span>
+            {% elif basal %}
+            <span class="stat-value">—</span>
+            <a href="{% url 'paciente:mmas8' 'seguimiento' %}" class="btn btn-primary btn-block">Completar seguimiento</a>
+            {% else %}
+            <span class="stat-value">—</span>
+            <p class="text-muted">Primero complete el de inicio.</p>
+            {% endif %}
+        </article>
+    </div>
+
+    {% if es_control and not pendientes %}
+    <article class="card card-success">
+        <h2>¡Gracias!</h2>
+        <p class="lead-text">Ya completó los cuestionarios de este estudio.</p>
+    </article>
+    {% endif %}
+
+    {% if not es_control %}
+    <p class="lead-text">
+        <a href="{% url 'paciente:medicamentos_hoy' %}">Ir a mis medicinas</a>
+    </p>
+    {% endif %}
+</section>
+
+{% if resultado_modal %}
+<div
+    id="mmas-resultado-modal"
+    class="mmas-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mmas-resultado-titulo"
+>
+    <div class="mmas-modal-backdrop" data-mmas-cerrar tabindex="-1"></div>
+    <div class="mmas-modal-panel card mmas-modal-{{ resultado_modal.categoria }}">
+        <h2 id="mmas-resultado-titulo" class="page-title">Su nivel de adherencia</h2>
+        <p class="text-muted">{{ resultado_modal.momento_label }}</p>
+        <p class="mmas-modal-puntaje">{{ resultado_modal.puntaje }}</p>
+        <p class="mmas-modal-categoria">{{ resultado_modal.categoria_label }}</p>
+        <p class="lead-text">{{ resultado_modal.mensaje }}</p>
+        <button type="button" class="btn btn-primary btn-block" data-mmas-cerrar>
+            Cerrar
+        </button>
+        {% if not es_control %}
+        <a href="{% url 'paciente:medicamentos_hoy' %}" class="btn btn-secondary btn-block">
+            Ir a mis medicinas
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if resultado_modal %}
+<script>
+(function () {
+    var modal = document.getElementById('mmas-resultado-modal');
+    if (!modal) return;
+
+    function cerrar() {
+        modal.classList.add('mmas-modal-oculto');
+        modal.setAttribute('aria-hidden', 'true');
+        if (window.history && window.history.replaceState) {
+            var url = window.location.pathname;
+            window.history.replaceState({}, '', url);
+        }
+    }
+
+    modal.querySelectorAll('[data-mmas-cerrar]').forEach(function (el) {
+        el.addEventListener('click', cerrar);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') cerrar();
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

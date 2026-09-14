@@ -17,22 +17,36 @@ def _subscription_info(suscripcion):
     }
 
 
-def enviar_push(suscripcion, titulo, cuerpo, url='/paciente/medicamentos/hoy/', tag='recordatin-alarma'):
-    payload = json.dumps({
+def enviar_push(
+    suscripcion,
+    titulo,
+    cuerpo,
+    url='/paciente/medicamentos/hoy/',
+    tag='recordatin-alarma',
+    toma_id=None,
+    demo=False,
+):
+    payload = {
         'title': titulo,
         'body': cuerpo,
         'url': url,
         'tag': tag,
-        'icon': '/static/paciente/img/logo.jpeg',
+        'icon': '/static/paciente/img/icon-192.png',
+        'badge': '/static/paciente/img/badge-96.png',
         'vibrate': [300, 100, 300, 100, 300],
-    })
+        'tomaId': toma_id,
+        'demo': bool(demo),
+    }
+    if toma_id or demo:
+        payload['actions'] = [
+            {'action': 'tomar', 'title': 'Ya lo tomé'},
+        ]
     try:
         webpush(
             subscription_info=_subscription_info(suscripcion),
-            data=payload,
+            data=json.dumps(payload),
             vapid_private_key=settings.VAPID_PRIVATE_KEY,
             vapid_claims={'sub': settings.VAPID_CLAIMS_EMAIL},
-            urgency='high',
         )
         return True
     except WebPushException as exc:
@@ -44,10 +58,26 @@ def enviar_push(suscripcion, titulo, cuerpo, url='/paciente/medicamentos/hoy/', 
         return False
 
 
-def enviar_push_paciente(paciente, titulo, cuerpo, url='/paciente/medicamentos/hoy/', tag='recordatin-alarma'):
+def enviar_push_paciente(
+    paciente,
+    titulo,
+    cuerpo,
+    url='/paciente/medicamentos/hoy/',
+    tag='recordatin-alarma',
+    toma_id=None,
+    demo=False,
+):
     enviados = 0
     for suscripcion in paciente.push_subscriptions.filter(activo=True, cuidador__isnull=True):
-        if enviar_push(suscripcion, titulo, cuerpo, url=url, tag=tag):
+        if enviar_push(
+            suscripcion,
+            titulo,
+            cuerpo,
+            url=url,
+            tag=tag,
+            toma_id=toma_id,
+            demo=demo,
+        ):
             enviados += 1
     return enviados
 
@@ -55,6 +85,7 @@ def enviar_push_paciente(paciente, titulo, cuerpo, url='/paciente/medicamentos/h
 def enviar_push_cuidadores(paciente, titulo, cuerpo, url='/paciente/cuidador/', tag='recordatin-cuidador'):
     enviados = 0
     for suscripcion in paciente.push_subscriptions.filter(activo=True, cuidador__isnull=False):
-        if enviar_push(suscripcion, titulo, cuerpo, url=url, tag=tag):
+        # Cuidadores: sin botón de toma (es del paciente)
+        if enviar_push(suscripcion, titulo, cuerpo, url=url, tag=tag, toma_id=None, demo=False):
             enviados += 1
     return enviados

@@ -1,4 +1,5 @@
 {% extends 'paciente/base.html' %}
+{% load static %}
 
 {% block title %}Mi perfil — Recordatin{% endblock %}
 
@@ -7,14 +8,24 @@
     <h1 class="page-title">Mi perfil</h1>
 
     <p class="lead-text">
+        {% if paciente.es_control %}
+        <a href="{% url 'paciente:mmas8_inicio' %}">Ir al cuestionario MMAS-8</a>
+        {% else %}
         <a href="{% url 'paciente:medicamentos_hoy' %}">Ir a mis medicinas y alarmas</a>
         ·
         <a href="{% url 'paciente:dashboard' %}">Ver resumen del día</a>
+        ·
+        <a href="{% url 'paciente:mmas8_inicio' %}">Cuestionario MMAS-8</a>
+        {% endif %}
     </p>
 
     <article class="card perfil-card">
         <div class="perfil-avatar" aria-hidden="true">{{ paciente.nombre|slice:":1" }}{{ paciente.apellidos|slice:":1" }}</div>
         <h2>{{ paciente.nombre }} {{ paciente.apellidos }}</h2>
+        {% if paciente.codigo_estudio %}
+        <p class="text-muted"><strong>Código de estudio:</strong> {{ paciente.codigo_estudio }}</p>
+        <p class="text-muted"><strong>Grupo:</strong> {{ paciente.get_grupo_display }}</p>
+        {% endif %}
         {% if paciente.telefono %}
         <p class="text-muted"><strong>Teléfono:</strong> {{ paciente.telefono }}</p>
         {% endif %}
@@ -23,6 +34,7 @@
         {% endif %}
     </article>
 
+    {% if not paciente.es_control %}
     <article class="card contador-dias-card">
         {% include 'paciente/includes/contador_dias.html' with contador_id='perfil' %}
         <a href="{% url 'paciente:dias_cumplidos' %}" class="btn btn-primary btn-block contador-dias-enlace">Ver detalle de días cumplidos</a>
@@ -41,6 +53,7 @@
         <p class="lead-text">
             Envíe un aviso de prueba a este celular. Primero active las alarmas
             en <a href="{% url 'paciente:medicamentos_hoy' %}">Mis medicinas</a>.
+            En el aviso verá el botón <strong>Ya lo tomé</strong> (como en una alarma real).
         </p>
         <form method="post" action="{% url 'paciente:probar_notificacion' %}">
             {% csrf_token %}
@@ -48,8 +61,15 @@
                 Probar notificación
             </button>
         </form>
+        <p class="lead-text" style="margin-top: 1rem;">
+            O vea ya cómo se ve el aviso (no necesita push del servidor):
+        </p>
+        <button type="button" id="btn-ver-notif-demo" class="btn btn-secondary btn-block">
+            Ver cómo se ve
+        </button>
+        <p id="notif-demo-status" class="text-muted" style="margin-top: 0.75rem;" role="status"></p>
     </article>
-
+    {% endif %}
     {% if paciente.diagnostico_principal %}
     <article class="card">
         <h2>Su diagnóstico</h2>
@@ -57,6 +77,8 @@
     </article>
     {% endif %}
 
+
+    {% if not paciente.es_control %}
     <article class="card">
         <h2>Su tratamiento</h2>
         <p>Tiene <strong>{{ prescripciones_activas }}</strong> receta{{ prescripciones_activas|pluralize }} activa{{ prescripciones_activas|pluralize }}.</p>
@@ -111,10 +133,19 @@
             <button type="submit" class="btn btn-primary btn-block">Invitar familiar</button>
         </form>
     </article>
+    {% else %}
+    {% include 'paciente/includes/ajuste_texto.html' %}
+    {% endif %}
 
     <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}
         <button type="submit" class="btn btn-secondary btn-block" aria-label="Cerrar sesión y salir">Cerrar sesión</button>
     </form>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{% if not paciente.es_control %}
+<script src="{% static 'paciente/js/preview-notif.js' %}"></script>
+{% endif %}
 {% endblock %}

@@ -33,6 +33,7 @@ class Command(BaseCommand):
                 titulo,
                 cuerpo,
                 tag=tag,
+                toma_id=toma.pk,
             )
             if enviados > 0:
                 toma.alarma_enviada_at = timezone.now()
