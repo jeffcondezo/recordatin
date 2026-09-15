@@ -24,17 +24,36 @@ def medicamentos_activos(paciente):
     ).select_related('prescripcion')
 
 
+def _horarios_validos_dia(paciente, fecha):
+    """mapa medicamento_id -> set de horas programadas vigentes ese día."""
+    weekday = fecha.weekday()
+    resultado = {}
+    for medicamento in medicamentos_activos(paciente):
+        horas = set()
+        for horario in medicamento.horarios.all():
+            if horario.aplica_en_dia(weekday):
+                horas.add(horario.hora)
+        resultado[medicamento.pk] = horas
+    return resultado
+
+
 def generar_tomas_del_dia(paciente, fecha=None):
     if fecha is None:
         fecha = timezone.localdate()
 
     weekday = fecha.weekday()
     creadas = 0
+    estados_abiertos = (
+        TomaMedicamento.ESTADO_PENDIENTE,
+        TomaMedicamento.ESTADO_TARDIO,
+    )
 
     for medicamento in medicamentos_activos(paciente):
+        horas_validas = []
         for horario in medicamento.horarios.all():
             if not horario.aplica_en_dia(weekday):
                 continue
+            horas_validas.append(horario.hora)
             _, created = TomaMedicamento.objects.get_or_create(
                 medicamento=medicamento,
                 paciente=paciente,
@@ -45,6 +64,22 @@ def generar_tomas_del_dia(paciente, fecha=None):
             if created:
                 creadas += 1
 
+        # Quitar tomas huérfanas de horarios que ya no existen (evita duplicados al editar).
+        TomaMedicamento.objects.filter(
+            medicamento=medicamento,
+            paciente=paciente,
+            fecha=fecha,
+            estado__in=estados_abiertos,
+        ).exclude(hora_programada__in=horas_validas).delete()
+
+    # Medicamentos desactivados: no deben seguir apareciendo ni alarmando hoy.
+    TomaMedicamento.objects.filter(
+        paciente=paciente,
+        fecha=fecha,
+        estado__in=estados_abiertos,
+        medicamento__activo=False,
+    ).delete()
+
     return creadas
 
 
@@ -52,10 +87,22 @@ def tomas_del_dia(paciente, fecha=None):
     if fecha is None:
         fecha = timezone.localdate()
     generar_tomas_del_dia(paciente, fecha)
-    return TomaMedicamento.objects.filter(
+
+    horas_por_med = _horarios_validos_dia(paciente, fecha)
+    qs = TomaMedicamento.objects.filter(
         paciente=paciente,
         fecha=fecha,
+        medicamento__activo=True,
+        medicamento__prescripcion__activa=True,
+        medicamento_id__in=horas_por_med.keys(),
     ).select_related('medicamento').order_by('hora_programada')
+
+    # Solo mostrar tomas cuya hora sigue en el esquema actual (evita fantasmas al editar).
+    return [
+        toma
+        for toma in qs
+        if toma.hora_programada in horas_por_med.get(toma.medicamento_id, set())
+    ]
 
 
 def _hora_programada_aware(toma):

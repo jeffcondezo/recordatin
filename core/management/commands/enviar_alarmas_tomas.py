@@ -1,24 +1,45 @@
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 
 from core.models import TomaMedicamento
+from paciente.constants import VENTANA_REINTENTO_ALARMA_MINUTOS
 from paciente.push import enviar_push_paciente
 
 
 class Command(BaseCommand):
-    help = 'Envía notificaciones push para tomas pendientes cuya hora programada es ahora.'
+    help = (
+        'Envía notificaciones push para tomas pendientes cuya hora programada '
+        'es ahora o quedó sin enviar dentro de la ventana de reintento.'
+    )
 
     def handle(self, *args, **options):
         ahora = timezone.localtime()
         hoy = ahora.date()
-        hora_actual = ahora.time().replace(second=0, microsecond=0)
+        hasta = ahora.time().replace(second=0, microsecond=0)
+        inicio_ventana = ahora - timedelta(minutes=VENTANA_REINTENTO_ALARMA_MINUTOS)
 
-        tomas = TomaMedicamento.objects.filter(
-            fecha=hoy,
-            estado=TomaMedicamento.ESTADO_PENDIENTE,
-            hora_programada=hora_actual,
-            alarma_enviada_at__isnull=True,
-        ).select_related('medicamento', 'paciente')
+        filtro_hora = Q(hora_programada__lte=hasta)
+        if inicio_ventana.date() == hoy:
+            desde = inicio_ventana.time().replace(second=0, microsecond=0)
+            filtro_hora &= Q(hora_programada__gte=desde)
+
+        tomas = (
+            TomaMedicamento.objects.filter(
+                fecha=hoy,
+                estado__in=(
+                    TomaMedicamento.ESTADO_PENDIENTE,
+                    TomaMedicamento.ESTADO_TARDIO,
+                ),
+                alarma_enviada_at__isnull=True,
+                medicamento__activo=True,
+                medicamento__prescripcion__activa=True,
+            )
+            .filter(filtro_hora)
+            .select_related('medicamento', 'paciente')
+        )
 
         tomas = list(tomas)
         total = 0
@@ -41,7 +62,8 @@ class Command(BaseCommand):
                 total += enviados
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f'Alarma toma {toma.pk} → {enviados} dispositivo(s)',
+                        f'Alarma toma {toma.pk} ({toma.hora_programada:%H:%M}) '
+                        f'→ {enviados} dispositivo(s)',
                     ),
                 )
             else:
@@ -56,4 +78,7 @@ class Command(BaseCommand):
                         ),
                     )
 
-        self.stdout.write(f'Procesadas {len(tomas)} tomas a las {hora_actual:%H:%M}; pushes: {total}')
+        self.stdout.write(
+            f'Ventana {VENTANA_REINTENTO_ALARMA_MINUTOS} min hasta {hasta:%H:%M}; '
+            f'candidatas {len(tomas)}; pushes: {total}',
+        )

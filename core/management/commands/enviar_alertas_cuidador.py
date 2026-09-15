@@ -38,6 +38,8 @@ class Command(BaseCommand):
                 TomaMedicamento.ESTADO_TARDIO,
             ),
             alerta_cuidador_enviada_at__isnull=True,
+            medicamento__activo=True,
+            medicamento__prescripcion__activa=True,
         ).select_related('medicamento', 'paciente')
 
         enviados = 0

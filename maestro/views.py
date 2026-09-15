@@ -7,10 +7,11 @@ from django.db.models import Exists, OuterRef, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.mmas8 import LIKERT8_CHOICES, evaluacion_para
-from core.models import EvaluacionMMAS8, MedicamentoPrescrito, Paciente
+from core.models import EvaluacionMMAS8, MedicamentoPrescrito, Paciente, TomaMedicamento
 from paciente.qr import generar_imagen_qr, url_acceso_paciente
 from paciente.services import generar_tomas_del_dia, medicamentos_activos
 
@@ -216,6 +217,17 @@ def medicamento_desactivar(request, paciente_id, medicamento_id):
     )
     medicamento.activo = False
     medicamento.save(update_fields=['activo'])
+    # Quitar tomas pendientes de hoy para que no sigan en el celular ni alarmando.
+    hoy = timezone.localdate()
+    TomaMedicamento.objects.filter(
+        medicamento=medicamento,
+        paciente=paciente,
+        fecha=hoy,
+        estado__in=(
+            TomaMedicamento.ESTADO_PENDIENTE,
+            TomaMedicamento.ESTADO_TARDIO,
+        ),
+    ).delete()
     messages.success(request, f'{medicamento.nombre} quedó desactivado.')
     return redirect('maestro:paciente_detalle', paciente_id=paciente.pk)
 
