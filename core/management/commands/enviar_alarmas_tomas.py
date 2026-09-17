@@ -7,17 +7,26 @@ from django.utils import timezone
 from core.models import TomaMedicamento
 from paciente.constants import VENTANA_REINTENTO_ALARMA_MINUTOS
 from paciente.push import enviar_push_paciente
+from paciente.services import generar_tomas_para_todos
 
 
 class Command(BaseCommand):
     help = (
-        'Envía notificaciones push para tomas pendientes cuya hora programada '
-        'es ahora o quedó sin enviar dentro de la ventana de reintento.'
+        'Asegura tomas del día en el backend y envía notificaciones push '
+        'para las pendientes en la ventana de reintento.'
     )
 
     def handle(self, *args, **options):
         ahora = timezone.localtime()
         hoy = ahora.date()
+
+        # Las tomas deben existir aunque el paciente no abra la app.
+        n_pac, n_creadas = generar_tomas_para_todos(fecha=hoy)
+        if n_creadas:
+            self.stdout.write(
+                f'Tomas generadas hoy: {n_creadas} ({n_pac} paciente(s))',
+            )
+
         hasta = ahora.time().replace(second=0, microsecond=0)
         inicio_ventana = ahora - timedelta(minutes=VENTANA_REINTENTO_ALARMA_MINUTOS)
 

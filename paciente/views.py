@@ -325,6 +325,9 @@ def medicamentos_hoy(request):
     if redir:
         return redir
     paciente = request.paciente
+    procesados = procesar_recompensas_pendientes(paciente)
+    _notificar_recompensas_ayer(request, procesados)
+    paciente.refresh_from_db()
     resumen = resumen_tomas_hoy(paciente)
     prescripcion = paciente.prescripciones.filter(activa=True).order_by('-fecha_emision').first()
     medicamentos_tratamiento = medicamentos_activos(paciente) if prescripcion else []
@@ -336,6 +339,7 @@ def medicamentos_hoy(request):
         'medicamentos_tratamiento': medicamentos_tratamiento,
         'recordatorios': recordatorios_json(paciente),
         'nav_active': 'inicio',
+        **_contexto_dias_cumplidos(paciente, procesados),
     }
     return render(request, 'paciente/medicamentos_hoy.html', context)
 

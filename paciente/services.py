@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from core.models import (
     MedicamentoPrescrito,
+    Paciente,
     TomaMedicamento,
 )
 
@@ -22,6 +23,37 @@ def medicamentos_activos(paciente):
         prescripcion__paciente=paciente,
         prescripcion__activa=True,
     ).select_related('prescripcion')
+
+
+def pacientes_con_tratamiento_activo():
+    """Pacientes de intervención con al menos un medicamento activo."""
+    return (
+        Paciente.objects.filter(
+            grupo=Paciente.GRUPO_INTERVENCION,
+            prescripciones__activa=True,
+            prescripciones__medicamentos__activo=True,
+        )
+        .distinct()
+        .order_by('pk')
+    )
+
+
+def generar_tomas_para_todos(fecha=None, pacientes=None):
+    """
+    Crea en el servidor las tomas del día (no depende de que el paciente abra la app).
+    Devuelve (pacientes_procesados, tomas_creadas).
+    """
+    if fecha is None:
+        fecha = timezone.localdate()
+    if pacientes is None:
+        pacientes = list(pacientes_con_tratamiento_activo())
+    else:
+        pacientes = list(pacientes)
+
+    creadas = 0
+    for paciente in pacientes:
+        creadas += generar_tomas_del_dia(paciente, fecha)
+    return len(pacientes), creadas
 
 
 def _horarios_validos_dia(paciente, fecha):
