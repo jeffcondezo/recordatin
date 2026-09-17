@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Recordatin</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: system-ui, sans-serif;
+      background: #16a34a;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .box { padding: 2rem; }
+    a { color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Recordatin</h1>
+    <p>Cargando…</p>
+    <p><a href="https://spentor.app/paciente/">Abrir Recordatin</a></p>
+  </div>
+  <script>
+    // Con server.url Capacitor carga spentor.app; este HTML es respaldo offline.
+    setTimeout(function () {
+      window.location.href = 'https://spentor.app/paciente/';
+    }, 400);
+  </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "appId": "app.spentor.recordatin",
+  "appName": "Recordatin",
+  "webDir": "www",
+  "server": {
+    "url": "https://spentor.app/paciente/",
+    "androidScheme": "https",
+    "allowNavigation": [
+      "spentor.app",
+      "www.spentor.app",
+      "*.spentor.app"
+    ]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#16a34a",
+      "showSpinner": false
+    },
+    "LocalNotifications": {
+      "iconColor": "#16a34a"
+    }
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#16a34a"
+  }
+}

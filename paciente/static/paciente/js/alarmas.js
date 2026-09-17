@@ -6,22 +6,41 @@
     var UNSUBSCRIBE_URL = '/paciente/api/push/unsubscribe/';
     var STORAGE_KEY = 'recordatin_alarmas_activas';
     var ALARMA_AUDIO = '/static/paciente/audio/alarma.wav';
+    var ACTION_TYPE = 'TOMA_MEDICINA';
 
     var dataEl = document.getElementById('recordatorios-data');
     var vapidEl = document.getElementById('vapid-public-key');
     var btnActivar = document.getElementById('btn-activar-alarmas');
     var statusEl = document.getElementById('alarma-status');
+    var hintEl = document.querySelector('.alarma-hint');
 
     var recordatorios = [];
     var notified = new Set();
     var timeouts = [];
     var pollId = null;
+    var nativeListenerReady = false;
 
     if (dataEl) {
         try {
             recordatorios = JSON.parse(dataEl.textContent);
         } catch (e) {
             recordatorios = [];
+        }
+    }
+
+    function isNativeApp() {
+        try {
+            return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function nativeLocalNotifications() {
+        try {
+            return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+        } catch (e) {
+            return null;
         }
     }
 
@@ -121,7 +140,22 @@
                 'X-CSRFToken': getCookie('csrftoken'),
             },
             credentials: 'same-origin',
-            body: JSON.stringify(body),
+            body: JSON.stringify(body || {}),
+        }).then(function (r) {
+            return r.json().catch(function () {
+                return { ok: r.ok };
+            });
+        });
+    }
+
+    function marcarTomaApi(tomaId) {
+        return fetch('/paciente/medicamentos/' + tomaId + '/tomar-api/', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
         }).then(function (r) {
             return r.json().catch(function () {
                 return { ok: r.ok };
@@ -147,7 +181,124 @@
         });
     }
 
-    function activarAlarmas() {
+    function ensureNativeListeners() {
+        var LN = nativeLocalNotifications();
+        if (!LN || nativeListenerReady) {
+            return Promise.resolve();
+        }
+        nativeListenerReady = true;
+        return LN.registerActionTypes({
+            types: [{
+                id: ACTION_TYPE,
+                actions: [
+                    { id: 'tomar', title: 'Ya lo tomé', foreground: true },
+                    { id: 'abrir', title: 'Abrir', foreground: true },
+                ],
+            }],
+        }).then(function () {
+            LN.addListener('localNotificationActionPerformed', function (event) {
+                var extra = (event.notification && event.notification.extra) || {};
+                var tomaId = extra.tomaId;
+                var action = event.actionId;
+                if (action === 'tomar' && tomaId) {
+                    marcarTomaApi(tomaId).finally(function () {
+                        window.location.href = '/paciente/medicamentos/hoy/';
+                    });
+                } else {
+                    window.location.href = '/paciente/medicamentos/hoy/';
+                }
+            });
+            LN.addListener('localNotificationReceived', function () {
+                playAlarma();
+            });
+        }).catch(function () {});
+    }
+
+    function scheduleNativeAlarms() {
+        var LN = nativeLocalNotifications();
+        if (!LN) {
+            return Promise.resolve(false);
+        }
+
+        return ensureNativeListeners().then(function () {
+            return LN.getPending();
+        }).then(function (pending) {
+            var list = (pending && pending.notifications) || [];
+            if (!list.length) {
+                return null;
+            }
+            return LN.cancel({ notifications: list.map(function (n) {
+                return { id: n.id };
+            }) });
+        }).then(function () {
+            var now = Date.now();
+            var notifications = [];
+            recordatorios.forEach(function (item) {
+                if (!item.at_ms || !item.id) return;
+                if (item.at_ms <= now) return;
+                // ID numérico estable por toma (requerido por Android).
+                var nid = parseInt(item.id, 10);
+                if (!nid) return;
+                notifications.push({
+                    id: nid,
+                    title: 'Recordatin — Es hora de su medicina',
+                    body: item.nombre + ' (' + item.dosis + ')',
+                    schedule: {
+                        at: new Date(item.at_ms),
+                        allowWhileIdle: true,
+                    },
+                    actionTypeId: ACTION_TYPE,
+                    extra: {
+                        tomaId: item.id,
+                        url: '/paciente/medicamentos/hoy/',
+                    },
+                });
+            });
+            if (!notifications.length) {
+                return true;
+            }
+            return LN.schedule({ notifications: notifications }).then(function () {
+                return true;
+            });
+        }).catch(function () {
+            return false;
+        });
+    }
+
+    function requestNativePermissions() {
+        var LN = nativeLocalNotifications();
+        if (!LN) {
+            return Promise.resolve(false);
+        }
+        return LN.requestPermissions().then(function (perm) {
+            var display = perm && (perm.display || perm.granted);
+            return display === 'granted' || display === true;
+        }).catch(function () {
+            return false;
+        });
+    }
+
+    function activarAlarmasNativas() {
+        return requestNativePermissions().then(function (ok) {
+            if (!ok) {
+                setStatus('Debe permitir notificaciones (y alarmas exactas, si Android lo pide).', true);
+                return;
+            }
+            return scheduleNativeAlarms().then(function (scheduled) {
+                localStorage.setItem(STORAGE_KEY, '1');
+                updateCardState(true);
+                scheduleForegroundTimers();
+                startPoll();
+                if (scheduled) {
+                    setStatus('Alarmas del teléfono activadas. Sonarán aunque la app esté cerrada.');
+                } else {
+                    setStatus('Permiso concedido, pero no se pudieron programar. Intente de nuevo.', true);
+                }
+            });
+        });
+    }
+
+    function activarAlarmasWeb() {
         if (!('Notification' in window)) {
             setStatus('Su navegador no admite notificaciones.', true);
             return Promise.resolve();
@@ -181,6 +332,13 @@
         });
     }
 
+    function activarAlarmas() {
+        if (isNativeApp() && nativeLocalNotifications()) {
+            return activarAlarmasNativas();
+        }
+        return activarAlarmasWeb();
+    }
+
     function updateCardState(active) {
         var card = document.getElementById('alarma-card');
         if (!card) return;
@@ -197,6 +355,16 @@
     }
 
     function initExistingSubscription() {
+        if (isNativeApp() && nativeLocalNotifications()) {
+            if (localStorage.getItem(STORAGE_KEY) === '1') {
+                updateCardState(true);
+                setStatus('Alarmas del teléfono activas.');
+                scheduleNativeAlarms();
+                scheduleForegroundTimers();
+                startPoll();
+            }
+            return;
+        }
         if (Notification.permission !== 'granted') return;
         registerServiceWorker().then(function (reg) {
             if (!reg || !reg.pushManager) return;
@@ -212,7 +380,11 @@
         }).catch(function () {});
     }
 
-    if ('serviceWorker' in navigator) {
+    if (isNativeApp()) {
+        if (hintEl) {
+            hintEl.innerHTML = 'En la app instalada, pulse el botón para programar las <strong>alarmas del teléfono</strong> (más precisas que el navegador).';
+        }
+    } else if ('serviceWorker' in navigator) {
         registerServiceWorker().catch(function () {});
     }
 
@@ -233,11 +405,14 @@
         });
     }
 
-    if (localStorage.getItem(STORAGE_KEY) === '1' || Notification.permission === 'granted') {
+    if (localStorage.getItem(STORAGE_KEY) === '1' || (!isNativeApp() && typeof Notification !== 'undefined' && Notification.permission === 'granted')) {
         initExistingSubscription();
     }
 
-    if (recordatorios.length && Notification.permission === 'granted') {
+    if (recordatorios.length && localStorage.getItem(STORAGE_KEY) === '1') {
+        if (isNativeApp()) {
+            scheduleNativeAlarms();
+        }
         scheduleForegroundTimers();
         startPoll();
     }
