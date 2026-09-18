@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.spentor.recordatin",
+      "sha256_cert_fingerprints": [
+        "A0:75:C1:8C:EA:5F:25:49:1D:76:62:65:68:6E:76:7C:F3:47:AA:33:0C:40:9E:A5:67:18:EE:D5:2A:7E:7D:41"
+      ]
+    }
+  }
+]

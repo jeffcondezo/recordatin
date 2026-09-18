@@ -11,7 +11,7 @@ def paciente_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect('entrada')
+            return redirect('login')
 
         paciente = obtener_paciente(request.user)
         if paciente is None:
@@ -19,11 +19,11 @@ def paciente_required(view_func):
                 request,
                 'Tu cuenta no está vinculada a un perfil de paciente.',
             )
-            return redirect('entrada')
+            return redirect('login')
 
         if not paciente.activo:
             messages.error(request, 'Tu perfil de paciente está inactivo.')
-            return redirect('entrada')
+            return redirect('login')
 
         request.paciente = paciente
         return view_func(request, *args, **kwargs)

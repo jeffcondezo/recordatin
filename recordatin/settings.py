@@ -129,9 +129,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-LOGIN_URL = 'entrada'
+LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'paciente:medicamentos_hoy'
-LOGOUT_REDIRECT_URL = 'entrada'
+LOGOUT_REDIRECT_URL = 'login'
 
 # URL base para enlaces QR (producción). Ej: https://recordatin.ejemplo.com
 SITE_URL = 'http://127.0.0.1:8000'

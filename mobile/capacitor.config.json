@@ -3,7 +3,7 @@
   "appName": "Recordatin",
   "webDir": "www",
   "server": {
-    "url": "https://spentor.app/paciente/",
+    "url": "https://spentor.app/accounts/login/",
     "androidScheme": "https",
     "allowNavigation": [
       "spentor.app",

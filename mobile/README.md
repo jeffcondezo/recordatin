@@ -39,7 +39,12 @@ cd android
 copy app\build\outputs\apk\debug\app-debug.apk ..\dist\Recordatin-debug.apk
 ```
 
-## Cambiar servidor
+## App Links (QR → app)
 
-Edite `capacitor.config.json` → `server.url`, luego `npm run sync` y vuelva a
-compilar.
+Tras desplegar el servidor, debe existir:
+
+`https://spentor.app/.well-known/assetlinks.json`
+
+Con la APK debug reinstalada, al escanear un QR de paciente
+(`…/paciente/entrar/…`) Android puede abrir **Recordatin** en lugar del navegador.
+La primera vez puede preguntar “abrir con…”: elija Recordatin y **Siempre**.

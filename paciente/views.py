@@ -571,6 +571,16 @@ def web_manifest(request):
     )
 
 
+@cache_control(max_age=3600, public=True)
+def android_asset_links(request):
+    """Digital Asset Links: permite que el QR abra la app Android instalada."""
+    path = _STATIC_PACIENTE / '.well-known' / 'assetlinks.json'
+    return HttpResponse(
+        path.read_text(encoding='utf-8'),
+        content_type='application/json',
+    )
+
+
 def _json_body(request):
     try:
         return json.loads(request.body.decode('utf-8'))
