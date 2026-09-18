@@ -15,6 +15,7 @@ from core.models import EvaluacionMMAS8, MedicamentoPrescrito, Paciente, TomaMed
 from paciente.qr import generar_imagen_qr, url_acceso_paciente
 from paciente.services import generar_tomas_del_dia, medicamentos_activos
 
+from .alarmas_monitor import resumen_alarmas_hoy, tomas_alarmas_hoy
 from .decorators import maestro_required
 from .forms import MedicamentoMaestroForm, PacienteEstudioForm, guardar_medicamento
 from .metricas import enriquecer_pacientes
@@ -141,6 +142,12 @@ def paciente_detalle(request, paciente_id):
         medicamentos_activos(paciente).prefetch_related('horarios')
     )
 
+    alarmas_hoy = tomas_alarmas_hoy(paciente=paciente)
+    n_push = paciente.push_subscriptions.filter(
+        activo=True,
+        cuidador__isnull=True,
+    ).count()
+
     return render(request, 'maestro/paciente_detalle.html', {
         'paciente': paciente,
         'form': form,
@@ -151,6 +158,26 @@ def paciente_detalle(request, paciente_id):
         'acceso_url': acceso_url,
         'qr_base64': qr_base64,
         'medicamentos': medicamentos,
+        'alarmas_hoy': alarmas_hoy,
+        'n_push_activo': n_push,
+    })
+
+
+@maestro_required
+def monitor_alarmas(request):
+    """Panel para ver si el servidor generó tomas y envió push hoy."""
+    hoy = timezone.localdate()
+    filas, contadores = resumen_alarmas_hoy(fecha=hoy)
+    filtro = (request.GET.get('estado') or '').strip()
+    if filtro:
+        filas = [f for f in filas if f['diag_codigo'] == filtro]
+
+    return render(request, 'maestro/monitor_alarmas.html', {
+        'hoy': hoy,
+        'filas': filas,
+        'contadores': contadores,
+        'filtro': filtro,
+        'ahora': timezone.localtime(),
     })
 
 

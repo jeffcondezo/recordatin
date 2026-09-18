@@ -194,8 +194,29 @@
     flex-shrink: 0;
 }
 
-.maestro-table-wide {
+.maestro-nav-link {
+    color: #1e3a5f;
+    text-decoration: none;
+    font-weight: 600;
     font-size: 0.95rem;
+}
+
+.maestro-nav-link:hover {
+    text-decoration: underline;
+}
+
+.alarma-row-enviada td:last-child {
+    color: #15803d;
+}
+
+.alarma-row-sin_dispositivo td:last-child,
+.alarma-row-no_enviada td:last-child {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+.alarma-row-esperando_cron td:last-child {
+    color: #a16207;
 }
 
 .maestro-table-wide th,

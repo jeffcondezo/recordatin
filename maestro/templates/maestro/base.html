@@ -18,6 +18,8 @@
         </a>
         {% if user.is_authenticated and user.is_staff %}
         <nav class="maestro-nav">
+            <a href="{% url 'maestro:panel' %}" class="maestro-nav-link">Pacientes</a>
+            <a href="{% url 'maestro:monitor_alarmas' %}" class="maestro-nav-link">Alarmas hoy</a>
             <span class="maestro-user">{{ user.username }}</span>
             <a href="{% url 'maestro:logout' %}" class="btn btn-secondary btn-sm">Salir</a>
         </nav>

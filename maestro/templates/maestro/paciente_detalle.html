@@ -115,6 +115,49 @@
     </article>
 
     <article class="card">
+        <h2>Alarmas y notificaciones (hoy)</h2>
+        <p class="lead-text">
+            Suscripciones push activas en este paciente:
+            <strong>{{ n_push_activo }}</strong>.
+            <a href="{% url 'maestro:monitor_alarmas' %}">Ver monitor global de hoy</a>
+        </p>
+        {% if alarmas_hoy %}
+        <div class="maestro-table-wrap">
+            <table class="maestro-table">
+                <thead>
+                    <tr>
+                        <th>Hora</th>
+                        <th>Medicina</th>
+                        <th>Toma</th>
+                        <th>Push enviado</th>
+                        <th>Diagnóstico</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in alarmas_hoy %}
+                    <tr>
+                        <td>{{ fila.toma.hora_programada|time:"H:i" }}</td>
+                        <td>{{ fila.toma.medicamento.nombre }}</td>
+                        <td>{{ fila.toma.get_estado_display }}</td>
+                        <td>
+                            {% if fila.toma.alarma_enviada_at %}
+                            {{ fila.toma.alarma_enviada_at|date:"H:i:s" }}
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td>{{ fila.diag_texto }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No hay tomas generadas para hoy todavía.</p>
+        {% endif %}
+    </article>
+
+    <article class="card">
         <h2>MMAS-8</h2>
         <div class="maestro-mmas-grid">
             <div>
