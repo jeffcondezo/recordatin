@@ -1,28 +1,62 @@
 from datetime import datetime, timedelta
 
-from django.db.models import Count, Q
+from django.conf import settings
 from django.utils import timezone
 
-from core.models import SuscripcionPush, TomaMedicamento
+from core.models import TomaMedicamento
+from paciente.sms import normalizar_msisdn
 
 
-def _diagnostico_toma(toma, ahora, n_subs):
-    """Interpreta por qué una alarma pudo no llegar al celular."""
+def _diagnostico_toma(toma, ahora):
+    """Interpreta el estado del recordatorio (SMS o push según configuración)."""
+    canal = getattr(settings, 'NOTIFICACIONES_CANAL', 'sms')
     programada = timezone.make_aware(
         datetime.combine(toma.fecha, toma.hora_programada),
         timezone.get_current_timezone(),
     )
+    telefono = (toma.paciente.telefono or '').strip()
+    msisdn = normalizar_msisdn(telefono) if telefono else None
+    anticipo_max = getattr(settings, 'SMS_ANTICIPO_MAX_MINUTOS', None)
+    if anticipo_max is None:
+        from paciente.constants import SMS_ANTICIPO_MAX_MINUTOS as anticipo_max
+
     if toma.alarma_enviada_at:
+        if canal == 'sms':
+            return 'enviada', f'SMS enviado ({toma.alarma_enviada_at.strftime("%H:%M:%S")})'
         return 'enviada', 'Push enviado por el servidor'
+
+    if canal == 'sms':
+        inicio_envio = programada - timedelta(minutes=anticipo_max)
+        if ahora < inicio_envio:
+            mins = int((inicio_envio - ahora).total_seconds() // 60)
+            return 'pendiente_hora', f'SMS se enviará ~{anticipo_max} min antes (faltan ~{mins} min)'
+        if ahora > programada:
+            if not telefono:
+                return 'sin_dispositivo', 'Sin teléfono registrado'
+            if not msisdn:
+                return 'sin_dispositivo', f'Teléfono inválido ({telefono})'
+            return 'no_enviada', 'Ventana de anticipo pasó y no hay envío — revise cron o LabsMobile'
+        # ahora entre inicio_envio y programada
+        if not telefono:
+            return 'sin_dispositivo', 'Sin teléfono registrado'
+        if not msisdn:
+            return 'sin_dispositivo', f'Teléfono inválido ({telefono})'
+        return 'esperando_cron', 'En ventana de anticipo; el cron debería enviar el SMS pronto'
+
     if ahora < programada:
         return 'pendiente_hora', 'Aún no es la hora'
-    if ahora > programada + timedelta(minutes=15):
-        ventana = 'fuera'
-    else:
-        ventana = 'en_ventana'
 
+    ventana = 'fuera' if ahora > programada + timedelta(minutes=15) else 'en_ventana'
+
+    # Canal push (legacy)
+    from core.models import SuscripcionPush
+    n_subs = SuscripcionPush.objects.filter(
+        paciente=toma.paciente,
+        activo=True,
+        cuidador__isnull=True,
+    ).count()
     if n_subs == 0:
-        return 'sin_dispositivo', 'Sin suscripción push activa (el paciente debe Activar alarmas)'
+        return 'sin_dispositivo', 'Sin suscripción push activa'
     if ventana == 'fuera':
         return 'no_enviada', 'Hora pasó y no hay envío — revise el cron o fallos de push'
     return 'esperando_cron', 'Hora cumplida; el cron debería enviarla en esta ventana'
@@ -41,29 +75,14 @@ def tomas_alarmas_hoy(paciente=None, fecha=None):
     if paciente is not None:
         qs = qs.filter(paciente=paciente)
 
-    tomas = list(qs)
-    if not tomas:
-        return []
-
-    paciente_ids = {t.paciente_id for t in tomas}
-    subs = (
-        SuscripcionPush.objects.filter(
-            paciente_id__in=paciente_ids,
-            activo=True,
-            cuidador__isnull=True,
-        )
-        .values('paciente_id')
-        .annotate(n=Count('id'))
-    )
-    subs_map = {row['paciente_id']: row['n'] for row in subs}
-
     filas = []
-    for toma in tomas:
-        n_subs = subs_map.get(toma.paciente_id, 0)
-        codigo, texto = _diagnostico_toma(toma, ahora, n_subs)
+    for toma in qs:
+        codigo, texto = _diagnostico_toma(toma, ahora)
+        telefono = (toma.paciente.telefono or '').strip()
         filas.append({
             'toma': toma,
-            'n_subs': n_subs,
+            'n_subs': 1 if telefono else 0,
+            'telefono': telefono or '—',
             'diag_codigo': codigo,
             'diag_texto': texto,
         })

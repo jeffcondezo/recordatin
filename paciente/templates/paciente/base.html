@@ -15,7 +15,7 @@
 </head>
 <body>
     <header class="app-header">
-        <a href="{% if paciente and paciente.es_control %}{% url 'paciente:mmas8_inicio' %}{% else %}{% url 'paciente:medicamentos_hoy' %}{% endif %}" class="brand" aria-label="Recordatin">
+        <a href="{% if not paciente or not paciente.tiene_consentimiento %}{% url 'paciente:consentimiento' %}{% elif paciente.es_control or paciente.es_no_definido %}{% url 'paciente:mmas8_inicio' %}{% else %}{% url 'paciente:medicamentos_hoy' %}{% endif %}" class="brand" aria-label="Recordatin">
             <img src="{% static 'paciente/img/logo.jpeg' %}" alt="Recordatin" class="brand-logo">
         </a>
         {% block header_extra %}{% endblock %}
@@ -44,6 +44,7 @@
 
     <p id="toma-confirm-live" class="visually-hidden" aria-live="assertive"></p>
 
+    {% if not ocultar_nav %}
     <nav class="bottom-nav" aria-label="Menú principal">
         {% if paciente and paciente.es_control %}
         <a href="{% url 'paciente:mmas8_inicio' %}" class="nav-item {% if nav_active == 'mmas8' %}active{% endif %}">
@@ -81,14 +82,15 @@
         </a>
         {% endif %}
     </nav>
+    {% endif %}
 
-    {% if user.is_authenticated and vapid_public_key %}
+    {% if user.is_authenticated and vapid_public_key and notificaciones_canal == 'push' %}
     {{ vapid_public_key|json_script:"vapid-public-key" }}
     {% endif %}
-    {% if recordatorios and paciente and not paciente.es_control %}
+    {% if recordatorios and paciente and not paciente.es_control and notificaciones_canal == 'push' %}
     {{ recordatorios|json_script:"recordatorios-data" }}
     {% endif %}
-    {% if user.is_authenticated and paciente and not paciente.es_control %}
+    {% if user.is_authenticated and paciente and not paciente.es_control and notificaciones_canal == 'push' %}
     <script src="{% static 'paciente/js/alarmas.js' %}"></script>
     {% endif %}
     <script src="{% static 'paciente/js/text-size.js' %}"></script>

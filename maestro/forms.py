@@ -12,19 +12,36 @@ class PacienteEstudioForm(forms.ModelForm):
         fields = [
             'codigo_estudio',
             'nombre',
-            'apellidos',
+            'dni',
             'telefono',
             'fecha_nacimiento',
+            'edad',
             'sexo',
             'diagnostico_principal',
+            'enfermedad_2',
+            'enfermedad_3',
             'grupo',
             'fecha_ingreso_estudio',
             'activo',
         ]
+        labels = {
+            'nombre': 'Nombres y apellidos',
+        }
         widgets = {
             'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}),
             'fecha_ingreso_estudio': forms.DateInput(attrs={'type': 'date'}),
-            'diagnostico_principal': forms.Textarea(attrs={'rows': 3}),
+            'diagnostico_principal': forms.TextInput(),
+            'enfermedad_2': forms.TextInput(),
+            'enfermedad_3': forms.TextInput(),
+            'edad': forms.NumberInput(attrs={'min': 0, 'max': 130}),
+        }
+        help_texts = {
+            'edad': (
+                'Se calcula sola si hay fecha de nacimiento. '
+                'Si no hay fecha, ingrese la edad aquí.'
+            ),
+            'enfermedad_2': 'Opcional.',
+            'enfermedad_3': 'Opcional.',
         }
 
     def __init__(self, *args, **kwargs):
@@ -34,6 +51,29 @@ class PacienteEstudioForm(forms.ModelForm):
             if isinstance(field.widget, forms.CheckboxInput):
                 css = 'form-check-input'
             field.widget.attrs.setdefault('class', css)
+
+        if self.instance and self.instance.pk and self.instance.fecha_nacimiento:
+            self.fields['edad'].initial = self.instance.edad_actual
+            self.fields['edad'].widget.attrs['readonly'] = True
+            self.fields['edad'].help_text = (
+                'Calculada automáticamente a partir de la fecha de nacimiento.'
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        fecha_nac = cleaned.get('fecha_nacimiento')
+        if fecha_nac:
+            cleaned['edad'] = Paciente.calcular_edad(fecha_nac)
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Todo el nombre va en un solo campo; se vacía el legado.
+        instance.apellidos = ''
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
 
 def _parse_hora(valor):

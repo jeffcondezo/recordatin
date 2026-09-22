@@ -42,24 +42,27 @@ class MedicamentoPrescritoInline(admin.TabularInline):
 @admin.register(Paciente)
 class PacienteAdmin(admin.ModelAdmin):
     list_display = (
-        'codigo_estudio', 'nombre', 'apellidos', 'grupo',
+        'codigo_estudio', 'nombre', 'grupo',
         'dias_cumplidos', 'user', 'activo', 'tiene_token_qr',
     )
     list_filter = ('grupo', 'activo', 'sexo')
-    search_fields = ('nombre', 'apellidos', 'codigo_estudio', 'user__username')
-    readonly_fields = ('token_acceso', 'enlace_acceso', 'qr_preview', 'descargar_qr')
+    search_fields = ('nombre', 'apellidos', 'codigo_estudio', 'dni', 'user__username')
+    readonly_fields = (
+        'token_acceso', 'enlace_acceso', 'qr_preview', 'descargar_qr',
+        'primer_acceso', 'consentimiento_aceptado_at', 'consentimiento_firma',
+    )
     actions = ['regenerar_codigo_qr']
     inlines = [CuidadorInline]
 
     fieldsets = (
         (None, {
             'fields': (
-                'user', 'codigo_estudio', 'nombre', 'apellidos', 'telefono',
-                'fecha_nacimiento', 'sexo', 'activo', 'dias_cumplidos',
+                'user', 'codigo_estudio', 'nombre', 'dni', 'telefono',
+                'fecha_nacimiento', 'edad', 'sexo', 'activo', 'dias_cumplidos',
             ),
         }),
         ('Estudio', {
-            'fields': ('grupo', 'fecha_ingreso_estudio'),
+            'fields': ('grupo', 'fecha_ingreso_estudio', 'primer_acceso', 'consentimiento_aceptado_at', 'consentimiento_firma'),
         }),
         ('Acceso por QR', {
             'fields': ('token_acceso', 'enlace_acceso', 'qr_preview', 'descargar_qr'),
@@ -69,7 +72,7 @@ class PacienteAdmin(admin.ModelAdmin):
             ),
         }),
         ('Clínico', {
-            'fields': ('diagnostico_principal',),
+            'fields': ('diagnostico_principal', 'enfermedad_2', 'enfermedad_3'),
         }),
     )
 

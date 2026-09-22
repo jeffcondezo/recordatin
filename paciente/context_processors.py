@@ -17,4 +17,5 @@ def paciente_context(request):
         'recordatorios': recordatorios_json(paciente) if not paciente.es_control else [],
         'dias_cumplidos': paciente.dias_cumplidos,
         'vapid_public_key': getattr(settings, 'VAPID_PUBLIC_KEY', ''),
+        'notificaciones_canal': getattr(settings, 'NOTIFICACIONES_CANAL', 'sms'),
     }

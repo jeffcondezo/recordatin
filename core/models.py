@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 import secrets
 
 
@@ -9,11 +10,48 @@ class Paciente(models.Model):
         on_delete=models.CASCADE,
         related_name='paciente',
     )
-    nombre = models.CharField(max_length=100)
-    apellidos = models.CharField(max_length=150)
+    nombre = models.CharField(
+        max_length=250,
+        verbose_name='Nombres y apellidos',
+    )
+    apellidos = models.CharField(
+        max_length=150,
+        blank=True,
+        default='',
+        verbose_name='Apellidos (legado)',
+        help_text='Campo antiguo; el nombre completo va en «Nombres y apellidos».',
+    )
+    dni = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name='DNI',
+        help_text='Documento de identidad.',
+    )
     telefono = models.CharField(max_length=20, blank=True)
     fecha_nacimiento = models.DateField(null=True, blank=True)
-    diagnostico_principal = models.TextField(blank=True)
+    edad = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Edad',
+        help_text=(
+            'Si hay fecha de nacimiento, se calcula sola. '
+            'Si no, puede cargarla aquí.'
+        ),
+    )
+    diagnostico_principal = models.TextField(
+        blank=True,
+        verbose_name='Enfermedad 1',
+    )
+    enfermedad_2 = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Enfermedad 2',
+    )
+    enfermedad_3 = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Enfermedad 3',
+    )
     activo = models.BooleanField(default=True)
     dias_cumplidos = models.PositiveIntegerField(
         default=0,
@@ -29,14 +67,16 @@ class Paciente(models.Model):
     )
     GRUPO_INTERVENCION = 'intervencion'
     GRUPO_CONTROL = 'control'
+    GRUPO_NO_DEFINIDO = 'no_definido'
     GRUPO_CHOICES = [
         (GRUPO_INTERVENCION, 'Intervención (app + notificaciones)'),
         (GRUPO_CONTROL, 'Control'),
+        (GRUPO_NO_DEFINIDO, 'No definido'),
     ]
     grupo = models.CharField(
         max_length=20,
         choices=GRUPO_CHOICES,
-        default=GRUPO_INTERVENCION,
+        default=GRUPO_NO_DEFINIDO,
         db_index=True,
         verbose_name='Grupo del estudio',
     )
@@ -65,6 +105,17 @@ class Paciente(models.Model):
         verbose_name='Primer acceso a la aplicación',
         help_text='Se registra automáticamente la primera vez que el paciente inicia sesión.',
     )
+    consentimiento_aceptado_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Consentimiento informado aceptado',
+    )
+    consentimiento_firma = models.ImageField(
+        upload_to='consentimientos/%Y/%m/',
+        blank=True,
+        null=True,
+        verbose_name='Firma del consentimiento',
+    )
     mmas_seguimiento_solicitado = models.BooleanField(
         default=False,
         verbose_name='Solicitar MMAS-8 de seguimiento al entrar',
@@ -87,8 +138,22 @@ class Paciente(models.Model):
 
     def __str__(self):
         if self.codigo_estudio:
-            return f'{self.codigo_estudio} — {self.nombre} {self.apellidos}'
-        return f'{self.nombre} {self.apellidos}'
+            return f'{self.codigo_estudio} — {self.nombre_completo}'
+        return self.nombre_completo
+
+    @property
+    def nombre_completo(self):
+        partes = [self.nombre or '', self.apellidos or '']
+        return ' '.join(p.strip() for p in partes if p and p.strip())
+
+    @property
+    def iniciales(self):
+        palabras = [p for p in self.nombre_completo.split() if p]
+        if not palabras:
+            return '?'
+        if len(palabras) == 1:
+            return palabras[0][:2].upper()
+        return (palabras[0][0] + palabras[-1][0]).upper()
 
     @property
     def es_control(self):
@@ -98,6 +163,41 @@ class Paciente(models.Model):
     def es_intervencion(self):
         return self.grupo == self.GRUPO_INTERVENCION
 
+    @property
+    def es_no_definido(self):
+        return self.grupo == self.GRUPO_NO_DEFINIDO
+
+    @property
+    def tiene_consentimiento(self):
+        return bool(self.consentimiento_aceptado_at and self.consentimiento_firma)
+
+    @staticmethod
+    def calcular_edad(fecha_nacimiento, referencia=None):
+        if not fecha_nacimiento:
+            return None
+        hoy = referencia or timezone.localdate()
+        años = hoy.year - fecha_nacimiento.year
+        if (hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day):
+            años -= 1
+        return max(años, 0)
+
+    @property
+    def edad_actual(self):
+        """Edad desde fecha de nacimiento, o el valor cargado manualmente."""
+        calculada = self.calcular_edad(self.fecha_nacimiento)
+        if calculada is not None:
+            return calculada
+        return self.edad
+
+    def enfermedades(self):
+        """Lista de enfermedades no vacías (1–3)."""
+        items = [
+            (self.diagnostico_principal or '').strip(),
+            (self.enfermedad_2 or '').strip(),
+            (self.enfermedad_3 or '').strip(),
+        ]
+        return [e for e in items if e]
+
     def regenerar_token_acceso(self):
         self.token_acceso = secrets.token_urlsafe(32)
         self.save(update_fields=['token_acceso'])
@@ -106,6 +206,9 @@ class Paciente(models.Model):
     def save(self, *args, **kwargs):
         if not self.token_acceso:
             self.token_acceso = secrets.token_urlsafe(32)
+        calculada = self.calcular_edad(self.fecha_nacimiento)
+        if calculada is not None:
+            self.edad = calculada
         super().save(*args, **kwargs)
 
 

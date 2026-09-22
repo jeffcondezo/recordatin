@@ -11,9 +11,31 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _load_dotenv(path: Path) -> None:
+    """Carga KEY=VALUE desde un archivo .env sin dependencia externa."""
+    if not path.is_file():
+        return
+    try:
+        for line in path.read_text(encoding='utf-8').splitlines():
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, _, value = line.partition('=')
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+    except OSError:
+        pass
+
+
+_load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -129,21 +151,34 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'paciente:medicamentos_hoy'
 LOGOUT_REDIRECT_URL = 'login'
 
-# URL base para enlaces QR (producción). Ej: https://recordatin.ejemplo.com
-SITE_URL = 'http://127.0.0.1:8000'
+# URL base para enlaces QR y SMS (producción). Ej: https://spentor.app
+SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Web Push (VAPID) — la privada va en archivo PEM (pywebpush la lee mejor así)
+# Web Push (VAPID) — opcional; el canal principal de alarmas es SMS (LabsMobile)
 VAPID_PUBLIC_KEY = (
     'BKzF7emho49M5yPDDV-5OW9iSahrJBnxtfEI5bJvRX5_6AD8dFf0-N0J1AWFjCFzp2zB7T3qqgSTXU1B4crm_VY'
 )
 VAPID_PRIVATE_KEY = str(BASE_DIR / 'vapid_private.pem')
 VAPID_CLAIMS_EMAIL = 'mailto:admin@recordatin.local'
+
+# Canal de recordatorios: 'sms' (LabsMobile) o 'push' (Web Push legacy)
+NOTIFICACIONES_CANAL = os.environ.get('NOTIFICACIONES_CANAL', 'sms')
+
+# LabsMobile SMS — https://api.labsmobile.com/json/send
+# Credenciales por variables de entorno (no subir el token al repo).
+LABSMOBILE_USERNAME = os.environ.get('LABSMOBILE_USERNAME', '')
+LABSMOBILE_TOKEN = os.environ.get('LABSMOBILE_TOKEN', '')
+LABSMOBILE_SENDER = os.environ.get('LABSMOBILE_SENDER', 'Recordatin')
+LABSMOBILE_DEFAULT_COUNTRY = os.environ.get('LABSMOBILE_DEFAULT_COUNTRY', '51')  # Perú

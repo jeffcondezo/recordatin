@@ -4,16 +4,20 @@
 
 {% block content %}
 <section class="page-section">
-    <p class="lead-text">
-        <a href="{% url 'maestro:paciente_detalle' paciente.pk %}">← Volver a {{ paciente }}</a>
-    </p>
-    <h1 class="page-title">{{ titulo }}</h1>
-    <p class="lead-text">
-        Estos datos generan las tomas del día y las notificaciones de alarma
-        (grupo intervención).
-    </p>
+    <div class="maestro-page-head">
+        <div>
+            <p class="lead-text" style="margin: 0 0 6px;">
+                <a href="{% url 'maestro:paciente_detalle' paciente.pk %}">← Volver a {{ paciente }}</a>
+            </p>
+            <h1 class="page-title">{{ titulo }}</h1>
+            <p class="lead-text">
+                Estos datos generan las tomas del día y los SMS de recordatorio
+                (grupo intervención).
+            </p>
+        </div>
+    </div>
 
-    <article class="card">
+    <article class="card maestro-form-card">
         <form method="post" class="maestro-form">
             {% csrf_token %}
             {% if form.non_field_errors %}

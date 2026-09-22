@@ -1,0 +1,136 @@
+{% extends 'paciente/base.html' %}
+
+{% block title %}Consentimiento informado — Recordatin{% endblock %}
+
+{% block content %}
+<section class="page-section consentimiento-section">
+    <h1 class="page-title">Consentimiento informado</h1>
+    <p class="lead-text">
+        Antes de continuar, lea el documento de consentimiento informado.
+        Si está de acuerdo, fírmelo con el dedo en el recuadro y pulse
+        <strong>Estoy de acuerdo</strong>.
+    </p>
+
+    <article class="card">
+        <h2>Documento</h2>
+        <p class="lead-text">
+            Se abrirá en otra pestaña para que pueda leerlo con calma.
+        </p>
+        <a
+            class="btn btn-secondary btn-block btn-lg"
+            href="{% url 'paciente:consentimiento_pdf' %}"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            Ver consentimiento informado (PDF)
+        </a>
+    </article>
+
+    <article class="card">
+        <h2>Su firma</h2>
+        <p class="lead-text">Firme aquí con el dedo (o el mouse en una computadora).</p>
+        <div class="firma-wrap">
+            <canvas id="firma-canvas" class="firma-canvas" width="640" height="240" aria-label="Área de firma"></canvas>
+        </div>
+        <button type="button" class="btn btn-secondary btn-block" id="firma-limpiar">
+            Borrar firma
+        </button>
+    </article>
+
+    <form method="post" id="firma-form" class="consentimiento-acciones">
+        {% csrf_token %}
+        <input type="hidden" name="firma" id="firma-data" value="">
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="firma-aceptar">
+            Estoy de acuerdo
+        </button>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var canvas = document.getElementById('firma-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var dibujando = false;
+    var huboTrazo = false;
+
+    function tamañoCanvas() {
+        var wrap = canvas.parentElement;
+        var w = Math.min(640, Math.floor(wrap.clientWidth || 320));
+        var h = Math.round(w * 0.4);
+        var ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(w * ratio);
+        canvas.height = Math.floor(h * ratio);
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#0f172a';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        huboTrazo = false;
+    }
+
+    function punto(e) {
+        var rect = canvas.getBoundingClientRect();
+        var src = e.touches && e.touches[0] ? e.touches[0] : e;
+        return {
+            x: src.clientX - rect.left,
+            y: src.clientY - rect.top
+        };
+    }
+
+    function iniciar(e) {
+        e.preventDefault();
+        dibujando = true;
+        var p = punto(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+    }
+
+    function mover(e) {
+        if (!dibujando) return;
+        e.preventDefault();
+        var p = punto(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        huboTrazo = true;
+    }
+
+    function fin(e) {
+        if (!dibujando) return;
+        e.preventDefault();
+        dibujando = false;
+    }
+
+    canvas.addEventListener('mousedown', iniciar);
+    canvas.addEventListener('mousemove', mover);
+    canvas.addEventListener('mouseup', fin);
+    canvas.addEventListener('mouseleave', fin);
+    canvas.addEventListener('touchstart', iniciar, { passive: false });
+    canvas.addEventListener('touchmove', mover, { passive: false });
+    canvas.addEventListener('touchend', fin, { passive: false });
+    canvas.addEventListener('touchcancel', fin, { passive: false });
+
+    document.getElementById('firma-limpiar').addEventListener('click', function () {
+        tamañoCanvas();
+    });
+
+    document.getElementById('firma-form').addEventListener('submit', function (e) {
+        if (!huboTrazo) {
+            e.preventDefault();
+            alert('Firme con el dedo en el recuadro antes de continuar.');
+            return;
+        }
+        document.getElementById('firma-data').value = canvas.toDataURL('image/png');
+    });
+
+    window.addEventListener('resize', tamañoCanvas);
+    tamañoCanvas();
+})();
+</script>
+{% endblock %}

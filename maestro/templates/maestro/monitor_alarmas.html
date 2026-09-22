@@ -4,13 +4,16 @@
 
 {% block content %}
 <section class="page-section">
-    <h1 class="page-title">Alarmas de hoy</h1>
-    <p class="lead-text">
-        Hora del servidor: <strong>{{ ahora|date:"d/m/Y H:i" }}</strong>
-        ({{ hoy|date:"l d M Y" }}).
-        Aquí se ve si el backend creó la toma y si el push se envió.
-        Si el servidor marcó «enviada» y el celular no sonó, el problema es del teléfono.
-    </p>
+    <div class="maestro-page-head">
+        <div>
+            <h1 class="page-title">Alarmas de hoy</h1>
+            <p class="lead-text">
+                Hora del servidor: <strong>{{ ahora|date:"d/m/Y H:i" }}</strong>
+                ({{ hoy|date:"l d M Y" }}).
+                Canal: <strong>SMS (LabsMobile)</strong>.
+            </p>
+        </div>
+    </div>
 
     <div class="maestro-stats">
         <a class="stat-card" href="?">
@@ -19,11 +22,11 @@
         </a>
         <a class="stat-card" href="?estado=enviada">
             <span class="stat-value">{{ contadores.enviadas }}</span>
-            <span class="stat-label">Push enviado</span>
+            <span class="stat-label">SMS enviado</span>
         </a>
         <a class="stat-card" href="?estado=sin_dispositivo">
             <span class="stat-value">{{ contadores.sin_dispositivo }}</span>
-            <span class="stat-label">Sin dispositivo</span>
+            <span class="stat-label">Sin teléfono</span>
         </a>
         <a class="stat-card" href="?estado=no_enviada">
             <span class="stat-value">{{ contadores.no_enviada }}</span>
@@ -52,8 +55,8 @@
                     <th>Paciente</th>
                     <th>Medicina</th>
                     <th>Estado toma</th>
-                    <th>Push</th>
-                    <th>Dispositivos</th>
+                    <th>SMS</th>
+                    <th>Teléfono</th>
                     <th>Diagnóstico</th>
                 </tr>
             </thead>
@@ -76,7 +79,7 @@
                         No
                         {% endif %}
                     </td>
-                    <td>{{ fila.n_subs }}</td>
+                    <td>{{ fila.telefono }}</td>
                     <td>{{ fila.diag_texto }}</td>
                 </tr>
                 {% endfor %}
@@ -84,7 +87,7 @@
         </table>
         {% else %}
         <p class="empty-state">
-            No hay tomas para hoy. Si ya desplegó el generador, ejecute
+            No hay tomas para hoy. Ejecute
             <code>python3 manage.py generar_tomas_diarias</code> o espere al cron de alarmas.
         </p>
         {% endif %}

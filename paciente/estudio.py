@@ -5,7 +5,10 @@ from core.models import EvaluacionMMAS8, Paciente
 
 
 def url_inicio_paciente(paciente):
-    """Destino tras login/QR según grupo y MMAS pendiente."""
+    """Destino tras login/QR según consentimiento, grupo y MMAS pendiente."""
+    if not paciente.tiene_consentimiento:
+        return reverse('paciente:consentimiento')
+
     pendientes = momentos_pendientes(paciente)
 
     # Basal siempre primero
@@ -19,7 +22,7 @@ def url_inicio_paciente(paciente):
     ):
         return reverse('paciente:mmas8', kwargs={'momento': 'seguimiento'})
 
-    if paciente.grupo == Paciente.GRUPO_CONTROL:
-        return reverse('paciente:mmas8_inicio')
+    if paciente.grupo == Paciente.GRUPO_INTERVENCION:
+        return reverse('paciente:medicamentos_hoy')
 
-    return reverse('paciente:medicamentos_hoy')
+    return reverse('paciente:mmas8_inicio')

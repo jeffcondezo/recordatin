@@ -1,0 +1,50 @@
+{% extends 'maestro/base.html' %}
+
+{% block title %}{{ titulo }} — {{ paciente }}{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="maestro-page-head">
+        <div>
+            <p class="lead-text" style="margin: 0 0 6px;">
+                <a href="{% url 'maestro:paciente_detalle' paciente.pk %}">← Volver a {{ paciente }}</a>
+            </p>
+            <h1 class="page-title">{{ titulo }}</h1>
+            <p class="lead-text">
+                Use este formulario si encuestó al paciente por teléfono u otro medio.
+                El registro queda marcado como cargado por el administrador.
+            </p>
+        </div>
+    </div>
+
+    {% if editando %}
+    <p class="alert alert-info">
+        Ya existe una evaluación
+        ({{ existente.fecha|date:"d/m/Y H:i" }} · {{ existente.get_registrado_por_display }},
+        puntaje {{ existente.puntaje }}).
+        Al guardar se reemplazarán las respuestas y se actualizará la fecha.
+    </p>
+    {% endif %}
+
+    <article class="card maestro-mmas-form-card">
+        <form method="post" class="maestro-mmas-form">
+            {% csrf_token %}
+            {% for field in form %}
+            <fieldset class="maestro-mmas-item">
+                <legend>{{ field.label }}</legend>
+                {{ field }}
+                {% if field.errors %}
+                <p class="field-error">{{ field.errors }}</p>
+                {% endif %}
+            </fieldset>
+            {% endfor %}
+            <div class="maestro-mmas-actions">
+                <button type="submit" class="btn btn-primary">
+                    {% if editando %}Guardar cambios{% else %}Registrar evaluación{% endif %}
+                </button>
+                <a class="btn btn-secondary" href="{% url 'maestro:paciente_detalle' paciente.pk %}">Cancelar</a>
+            </div>
+        </form>
+    </article>
+</section>
+{% endblock %}

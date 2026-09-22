@@ -2,9 +2,18 @@ from functools import wraps
 
 from django.contrib import messages
 from django.shortcuts import redirect, render
+from django.urls import resolve
 
 from .cuidador_auth import obtener_cuidador_sesion
 from .services import obtener_paciente
+
+# Vistas permitidas sin haber firmado el consentimiento
+_CONSENTIMIENTO_OK_NAMES = frozenset({
+    'consentimiento',
+    'consentimiento_pdf',
+    'service_worker',
+    'web_manifest',
+})
 
 
 def paciente_required(view_func):
@@ -26,6 +35,15 @@ def paciente_required(view_func):
             return redirect('login')
 
         request.paciente = paciente
+
+        if not paciente.tiene_consentimiento:
+            try:
+                url_name = resolve(request.path_info).url_name
+            except Exception:
+                url_name = None
+            if url_name not in _CONSENTIMIENTO_OK_NAMES:
+                return redirect('paciente:consentimiento')
+
         return view_func(request, *args, **kwargs)
 
     return wrapper

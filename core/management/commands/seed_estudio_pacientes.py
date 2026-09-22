@@ -84,8 +84,7 @@ class Command(BaseCommand):
             )
             # Mismo patrón de nombre para guiar el reemplazo por datos reales:
             # "Participante P001", "Participante P002", …
-            nombre = 'Participante'
-            apellidos = codigo
+            nombre = f'Participante {codigo}'
             sexo = rng.choice([Paciente.SEXO_M, Paciente.SEXO_F, Paciente.SEXO_O])
             edad = rng.randint(45, 85)
             fecha_nac = date(hoy.year - edad, rng.randint(1, 12), rng.randint(1, 28))
@@ -103,7 +102,7 @@ class Command(BaseCommand):
                 defaults={
                     'codigo_estudio': codigo,
                     'nombre': nombre,
-                    'apellidos': apellidos,
+                    'apellidos': '',
                     'telefono': f'555-{1000 + i:04d}',
                     'fecha_nacimiento': fecha_nac,
                     'sexo': sexo,

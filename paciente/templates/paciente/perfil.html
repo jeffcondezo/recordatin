@@ -20,8 +20,8 @@
     </p>
 
     <article class="card perfil-card">
-        <div class="perfil-avatar" aria-hidden="true">{{ paciente.nombre|slice:":1" }}{{ paciente.apellidos|slice:":1" }}</div>
-        <h2>{{ paciente.nombre }} {{ paciente.apellidos }}</h2>
+        <div class="perfil-avatar" aria-hidden="true">{{ paciente.iniciales }}</div>
+        <h2>{{ paciente.nombre_completo }}</h2>
         {% if paciente.codigo_estudio %}
         <p class="text-muted"><strong>Código de estudio:</strong> {{ paciente.codigo_estudio }}</p>
         <p class="text-muted"><strong>Grupo:</strong> {{ paciente.get_grupo_display }}</p>
@@ -31,6 +31,9 @@
         {% endif %}
         {% if paciente.fecha_nacimiento %}
         <p class="text-muted"><strong>Nacimiento:</strong> {{ paciente.fecha_nacimiento|date:"d/m/Y" }}</p>
+        {% endif %}
+        {% if paciente.edad_actual is not None %}
+        <p class="text-muted"><strong>Edad:</strong> {{ paciente.edad_actual }} años</p>
         {% endif %}
     </article>
 
@@ -49,31 +52,32 @@
     </article>
 
     <article class="card">
-        <h2>Probar notificaciones</h2>
+        <h2>Probar SMS</h2>
         <p class="lead-text">
-            Envíe un aviso de prueba a este celular. Primero active las alarmas
-            en <a href="{% url 'paciente:medicamentos_hoy' %}">Mis medicinas</a>.
-            En el aviso verá el botón <strong>Ya lo tomé</strong> (como en una alarma real).
+            Envíe un mensaje de prueba al teléfono registrado
+            {% if paciente.telefono %}(<strong>{{ paciente.telefono }}</strong>){% endif %}.
         </p>
         <form method="post" action="{% url 'paciente:probar_notificacion' %}">
             {% csrf_token %}
-            <button type="submit" class="btn btn-accent btn-block">
-                Probar notificación
+            <button type="submit" class="btn btn-accent btn-block" {% if not paciente.telefono %}disabled{% endif %}>
+                Enviar SMS de prueba
             </button>
         </form>
-        <p class="lead-text" style="margin-top: 1rem;">
-            O vea ya cómo se ve el aviso (no necesita push del servidor):
+        {% if not paciente.telefono %}
+        <p class="text-muted" style="margin-top: 0.75rem;">
+            No hay teléfono registrado. Solicite que lo carguen en el panel del estudio.
         </p>
-        <button type="button" id="btn-ver-notif-demo" class="btn btn-secondary btn-block">
-            Ver cómo se ve
-        </button>
-        <p id="notif-demo-status" class="text-muted" style="margin-top: 0.75rem;" role="status"></p>
+        {% endif %}
     </article>
     {% endif %}
-    {% if paciente.diagnostico_principal %}
+    {% if paciente.enfermedades %}
     <article class="card">
-        <h2>Su diagnóstico</h2>
-        <p>{{ paciente.diagnostico_principal }}</p>
+        <h2>Sus enfermedades</h2>
+        <ul class="perfil-enfermedades">
+            {% for enf in paciente.enfermedades %}
+            <li>{{ enf }}</li>
+            {% endfor %}
+        </ul>
     </article>
     {% endif %}
 
@@ -142,10 +146,4 @@
         <button type="submit" class="btn btn-secondary btn-block" aria-label="Cerrar sesión y salir">Cerrar sesión</button>
     </form>
 </section>
-{% endblock %}
-
-{% block extra_js %}
-{% if not paciente.es_control %}
-<script src="{% static 'paciente/js/preview-notif.js' %}"></script>
-{% endif %}
 {% endblock %}

@@ -24,3 +24,19 @@ class MMAS8Form(forms.Form):
 
 def respuestas_desde_form(cleaned_data):
     return {clave: cleaned_data[clave] for clave, _t, _tipo in ITEMS_MMAS8}
+
+
+def initial_desde_evaluacion(evaluacion):
+    """Valores iniciales del formulario a partir de una evaluación guardada."""
+    if not evaluacion or not evaluacion.respuestas:
+        return {}
+    initial = {}
+    for clave, _texto, tipo in ITEMS_MMAS8:
+        raw = evaluacion.respuestas.get(clave)
+        if raw is None:
+            continue
+        if tipo == 'likert8':
+            initial[clave] = int(raw)
+        else:
+            initial[clave] = raw
+    return initial

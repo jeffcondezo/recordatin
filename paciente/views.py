@@ -27,6 +27,7 @@ from .estudio import url_inicio_paciente
 from .forms_mmas8 import MMAS8Form, respuestas_desde_form
 from .qr import generar_imagen_qr, url_acceso_cuidador
 from .push import enviar_push_paciente
+from .sms import enviar_sms_paciente, labsmobile_configurado, mensaje_recordatorio_grupo
 from .recompensas import (
     procesar_recompensas_pendientes,
     ultimos_registros_recompensa,
@@ -150,6 +151,79 @@ def entrar_por_qr(request, token):
 @paciente_required
 def paciente_home(request):
     return redirect(url_inicio_paciente(request.paciente))
+
+
+def _ruta_consentimiento_pdf():
+    """PDF en static (deploy) o en la raíz del proyecto."""
+    candidatos = [
+        Path(settings.BASE_DIR) / 'paciente' / 'static' / 'paciente' / 'docs' / 'consentimiento.pdf',
+        Path(settings.BASE_DIR) / 'consentimiento.pdf',
+        Path(settings.STATIC_ROOT) / 'paciente' / 'docs' / 'consentimiento.pdf',
+    ]
+    for ruta in candidatos:
+        if ruta.is_file():
+            return ruta
+    return None
+
+
+@paciente_required
+@cache_control(private=True, max_age=3600)
+def consentimiento_pdf(request):
+    ruta = _ruta_consentimiento_pdf()
+    if ruta is None:
+        return HttpResponse('Consentimiento no disponible.', status=404)
+    response = HttpResponse(ruta.read_bytes(), content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="consentimiento-informado.pdf"'
+    return response
+
+
+@paciente_required
+def consentimiento(request):
+    paciente = request.paciente
+    if paciente.tiene_consentimiento:
+        return redirect(url_inicio_paciente(paciente))
+
+    if request.method == 'POST':
+        firma_b64 = (request.POST.get('firma') or '').strip()
+        if not firma_b64.startswith('data:image/png;base64,'):
+            messages.error(request, 'Firme con el dedo en el recuadro e intente de nuevo.')
+        else:
+            try:
+                raw = base64.b64decode(firma_b64.split(',', 1)[1])
+            except Exception:
+                raw = b''
+            # Firma vacía / casi en blanco
+            if len(raw) < 800:
+                messages.error(
+                    request,
+                    'La firma parece vacía. Firme con el dedo en el recuadro.',
+                )
+            else:
+                from django.core.files.base import ContentFile
+
+                nombre_archivo = f'firma-{paciente.pk}-{timezone.now():%Y%m%d%H%M%S}.png'
+                if paciente.consentimiento_firma:
+                    paciente.consentimiento_firma.delete(save=False)
+                paciente.consentimiento_firma.save(
+                    nombre_archivo,
+                    ContentFile(raw),
+                    save=False,
+                )
+                paciente.consentimiento_aceptado_at = timezone.now()
+                paciente.save(
+                    update_fields=['consentimiento_firma', 'consentimiento_aceptado_at'],
+                )
+                messages.success(
+                    request,
+                    'Gracias. Su consentimiento quedó registrado.',
+                )
+                return redirect(url_inicio_paciente(paciente))
+
+    return render(request, 'paciente/consentimiento.html', {
+        'paciente': paciente,
+        'nav_active': None,
+        'ocultar_nav': True,
+    })
 
 
 @paciente_required
@@ -639,6 +713,47 @@ def push_unsubscribe(request):
 @require_POST
 def probar_notificacion(request):
     paciente = request.paciente
+    canal = getattr(settings, 'NOTIFICACIONES_CANAL', 'sms')
+
+    if canal == 'sms':
+        if not (paciente.telefono or '').strip():
+            messages.warning(
+                request,
+                'No hay teléfono registrado. Pida a su investigador que lo cargue en el panel.',
+            )
+            return redirect('paciente:perfil')
+        if not labsmobile_configurado():
+            messages.error(
+                request,
+                'El envío de SMS no está configurado en el servidor. Avise al administrador.',
+            )
+            return redirect('paciente:perfil')
+
+        # Mensaje de prueba con el mismo formato compacto (sin tomas reales).
+        from types import SimpleNamespace
+        from django.utils import timezone as tz
+
+        demo = SimpleNamespace(
+            hora_programada=tz.localtime().time().replace(second=0, microsecond=0),
+            medicamento=SimpleNamespace(nombre='Medicamento de prueba', dosis='1 dosis'),
+        )
+        resultado = enviar_sms_paciente(
+            paciente,
+            mensaje_recordatorio_grupo([demo], incluir_enlace=True),
+        )
+        if resultado.get('ok'):
+            messages.success(
+                request,
+                f'SMS de prueba enviado a {resultado.get("msisdn")}. Revise su bandeja de mensajes.',
+            )
+        else:
+            messages.error(
+                request,
+                f'No se pudo enviar el SMS ({resultado.get("error")}). '
+                'Verifique el número o la configuración de LabsMobile.',
+            )
+        return redirect('paciente:perfil')
+
     tiene_suscripcion = paciente.push_subscriptions.filter(
         activo=True,
         cuidador__isnull=True,
@@ -653,20 +768,13 @@ def probar_notificacion(request):
     enviados = enviar_push_paciente(
         paciente,
         'Recordatin — Prueba',
-        'Si ve este aviso, las notificaciones están bien. Pulse «Ya lo tomé» para ver cómo funciona.',
+        'Si ve este aviso, las notificaciones están bien configuradas.',
         url='/paciente/perfil/',
         tag='recordatin-prueba',
         demo=True,
     )
     if enviados:
-        messages.success(
-            request,
-            'Notificación de prueba enviada. Debe aparecer el botón «Ya lo tomé»; '
-            'púlselo para ver cómo se verá en una alarma real.',
-        )
+        messages.success(request, 'Notificación de prueba enviada.')
     else:
-        messages.error(
-            request,
-            'No se pudo enviar la notificación. Active las alarmas de nuevo e intente otra vez.',
-        )
+        messages.error(request, 'No se pudo enviar la notificación.')
     return redirect('paciente:perfil')

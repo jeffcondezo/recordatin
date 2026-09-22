@@ -31,4 +31,9 @@ urlpatterns = [
         views.paciente_activar_seguimiento_hint,
         name='recordar_seguimiento',
     ),
+    path(
+        'pacientes/<int:paciente_id>/mmas8/<str:momento>/',
+        views.paciente_mmas8,
+        name='paciente_mmas8',
+    ),
 ]

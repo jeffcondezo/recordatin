@@ -28,8 +28,12 @@ Thumbs.db
 
 # Local env
 .env
-.env.*
+.env.local
 vapid_private.pem
+
+# Datos personales de carga (no versionar)
+carga.xlsx
+*.xlsx
 
 # Android / Capacitor
 mobile/node_modules/

@@ -4,75 +4,106 @@
 
 {% block content %}
 <section class="page-section">
-    <p class="lead-text"><a href="{% url 'maestro:panel' %}">← Volver al listado</a></p>
-    <h1 class="page-title">{{ paciente.nombre }} {{ paciente.apellidos }}</h1>
-    <p class="text-muted">
-        Código: <strong>{{ paciente.codigo_estudio|default:"—" }}</strong>
-        · Usuario: <strong>{{ paciente.user.username }}</strong>
-        · Grupo: <strong>{{ paciente.get_grupo_display }}</strong>
-    </p>
-
-    <article class="card maestro-qr-card">
-        <h2>Código QR de acceso</h2>
-        <p class="lead-text">
-            Envíe esta imagen al paciente o imprímala. Al escanearla entra a Recordatin.
-        </p>
-        <div class="maestro-qr-block">
-            <img
-                id="paciente-qr-img"
-                src="data:image/png;base64,{{ qr_base64 }}"
-                alt="Código QR de {{ paciente.codigo_estudio|default:paciente.pk }}"
-                class="maestro-qr-img"
-                width="240"
-                height="240"
-            >
-            <div class="maestro-qr-actions">
-                <a
-                    class="btn btn-primary"
-                    href="{% url 'maestro:paciente_qr_png' paciente.pk %}"
-                    download="recordatin-qr-{{ paciente.codigo_estudio|default:paciente.pk }}.png"
-                >
-                    Descargar PNG
-                </a>
-                <button type="button" class="btn btn-secondary" id="btn-copiar-qr">
-                    Copiar imagen
-                </button>
-                <button type="button" class="btn btn-secondary" id="btn-copiar-url"
-                        data-url="{{ acceso_url }}">
-                    Copiar enlace
-                </button>
-                <p id="qr-copy-status" class="text-muted" aria-live="polite"></p>
-                <p class="maestro-qr-url text-muted">{{ acceso_url }}</p>
-            </div>
+    <div class="maestro-page-head">
+        <div>
+            <p class="lead-text" style="margin: 0 0 6px;"><a href="{% url 'maestro:panel' %}">← Volver al listado</a></p>
+            <h1 class="page-title">{{ paciente.nombre_completo }}</h1>
+            <p class="text-muted" style="margin: 6px 0 0;">
+                Código: <strong>{{ paciente.codigo_estudio|default:"—" }}</strong>
+                · Usuario: <strong>{{ paciente.user.username }}</strong>
+                · Grupo: <strong>{{ paciente.get_grupo_display }}</strong>
+                · Consentimiento:
+                {% if paciente.tiene_consentimiento %}
+                <strong>Firmado {{ paciente.consentimiento_aceptado_at|date:"d/m/Y H:i" }}</strong>
+                {% else %}
+                <strong>Pendiente</strong>
+                {% endif %}
+            </p>
         </div>
-    </article>
+    </div>
 
+    {% if paciente.tiene_consentimiento %}
     <article class="card">
-        <h2>Datos del paciente</h2>
-        <form method="post" class="maestro-form">
-            {% csrf_token %}
-            {% for field in form %}
-            <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}<p class="field-error">{{ field.errors }}</p>{% endif %}
-            </div>
-            {% endfor %}
-            <button type="submit" class="btn btn-primary">Guardar cambios</button>
-        </form>
+        <h2>Consentimiento informado</h2>
+        <p class="text-muted">
+            Aceptado el {{ paciente.consentimiento_aceptado_at|date:"d/m/Y H:i" }}.
+        </p>
+        {% if paciente.consentimiento_firma %}
+        <img
+            src="{{ paciente.consentimiento_firma.url }}"
+            alt="Firma del paciente"
+            class="maestro-firma-img"
+            style="max-width: 360px; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;"
+        >
+        {% endif %}
     </article>
+    {% endif %}
+
+    <div class="maestro-detalle-grid">
+        <article class="card maestro-qr-card">
+            <h2>Código QR de acceso</h2>
+            <p class="lead-text">
+                Envíe esta imagen al paciente o imprímala. Al escanearla entra a Recordatin.
+            </p>
+            <div class="maestro-qr-block">
+                <img
+                    id="paciente-qr-img"
+                    src="data:image/png;base64,{{ qr_base64 }}"
+                    alt="Código QR de {{ paciente.codigo_estudio|default:paciente.pk }}"
+                    class="maestro-qr-img"
+                    width="240"
+                    height="240"
+                >
+                <div class="maestro-qr-actions">
+                    <a
+                        class="btn btn-primary"
+                        href="{% url 'maestro:paciente_qr_png' paciente.pk %}"
+                        download="recordatin-qr-{{ paciente.codigo_estudio|default:paciente.pk }}.png"
+                    >
+                        Descargar PNG
+                    </a>
+                    <button type="button" class="btn btn-secondary" id="btn-copiar-qr">
+                        Copiar imagen
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btn-copiar-url"
+                            data-url="{{ acceso_url }}">
+                        Copiar enlace
+                    </button>
+                    <p id="qr-copy-status" class="text-muted" aria-live="polite"></p>
+                    <p class="maestro-qr-url text-muted">{{ acceso_url }}</p>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <h2>Datos del paciente</h2>
+            <form method="post" class="maestro-form">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="text-muted">{{ field.help_text }}</p>{% endif %}
+                    {% if field.errors %}<p class="field-error">{{ field.errors }}</p>{% endif %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </form>
+        </article>
+    </div>
 
     <article class="card">
         <h2>Medicamentos y horarios</h2>
         <p class="lead-text">
             Defina qué fármacos toma el paciente y a qué horas.
-            Con eso se generan las tomas del día y las notificaciones push
+            Con eso se generan las tomas del día y los SMS de recordatorio
             (útil sobre todo en el grupo intervención).
         </p>
-        {% if paciente.es_control %}
+        {% if not paciente.es_intervencion %}
         <p class="text-muted">
-            Este paciente es del grupo control: puede registrar medicinas por
-            registro clínico, pero la app de control no muestra alarmas.
+            Este paciente no está en el grupo intervención: puede registrar medicinas,
+            pero no se envían SMS de recordatorio hasta asignarlo a intervención
+            y configurar horarios.
         </p>
         {% endif %}
 
@@ -115,10 +146,10 @@
     </article>
 
     <article class="card">
-        <h2>Alarmas y notificaciones (hoy)</h2>
+        <h2>Alarmas y SMS (hoy)</h2>
         <p class="lead-text">
-            Suscripciones push activas en este paciente:
-            <strong>{{ n_push_activo }}</strong>.
+            Teléfono del paciente:
+            <strong>{{ paciente.telefono|default:"(sin registrar)" }}</strong>.
             <a href="{% url 'maestro:monitor_alarmas' %}">Ver monitor global de hoy</a>
         </p>
         {% if alarmas_hoy %}
@@ -129,7 +160,7 @@
                         <th>Hora</th>
                         <th>Medicina</th>
                         <th>Toma</th>
-                        <th>Push enviado</th>
+                        <th>SMS enviado</th>
                         <th>Diagnóstico</th>
                     </tr>
                 </thead>
@@ -159,23 +190,42 @@
 
     <article class="card">
         <h2>MMAS-8</h2>
+        <p class="lead-text">
+            Puede registrar o corregir las encuestas aquí (p. ej. si se hicieron por teléfono).
+            También puede pedir al paciente que las complete en la app.
+        </p>
         <div class="maestro-mmas-grid">
-            <div>
-                <h3>Basal</h3>
+            <div class="maestro-mmas-col">
+                <h3>Basal (inicio)</h3>
                 {% if basal %}
                 <p><strong>Puntaje:</strong> {{ basal.puntaje }} ({{ basal.get_categoria_display }})</p>
                 <p class="text-muted">{{ basal.fecha|date:"d/m/Y H:i" }} · {{ basal.get_registrado_por_display }}</p>
+                <a class="btn btn-secondary btn-sm" href="{% url 'maestro:paciente_mmas8' paciente.pk 'basal' %}">
+                    Editar basal
+                </a>
                 {% else %}
                 <p class="text-muted">Pendiente</p>
+                <a class="btn btn-primary btn-sm" href="{% url 'maestro:paciente_mmas8' paciente.pk 'basal' %}">
+                    Registrar basal
+                </a>
                 {% endif %}
             </div>
-            <div>
+            <div class="maestro-mmas-col">
                 <h3>Seguimiento</h3>
                 {% if seguimiento %}
                 <p><strong>Puntaje:</strong> {{ seguimiento.puntaje }} ({{ seguimiento.get_categoria_display }})</p>
                 <p class="text-muted">{{ seguimiento.fecha|date:"d/m/Y H:i" }} · {{ seguimiento.get_registrado_por_display }}</p>
+                <a class="btn btn-secondary btn-sm" href="{% url 'maestro:paciente_mmas8' paciente.pk 'seguimiento' %}">
+                    Editar seguimiento
+                </a>
                 {% else %}
                 <p class="text-muted">Pendiente</p>
+                {% if basal %}
+                <p class="maestro-mmas-actions-inline">
+                    <a class="btn btn-primary btn-sm" href="{% url 'maestro:paciente_mmas8' paciente.pk 'seguimiento' %}">
+                        Registrar seguimiento
+                    </a>
+                </p>
                 {% if paciente.mmas_seguimiento_solicitado %}
                 <p class="lead-text">
                     Ya está marcado: al entrar a la app verá el cuestionario de seguimiento.
@@ -191,6 +241,9 @@
                         {% endif %}
                     </button>
                 </form>
+                {% else %}
+                <p class="text-muted">Primero registre la basal.</p>
+                {% endif %}
                 {% endif %}
             </div>
         </div>

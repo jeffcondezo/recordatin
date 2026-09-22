@@ -43,8 +43,8 @@ class Command(BaseCommand):
         paciente, _ = Paciente.objects.update_or_create(
             user=user,
             defaults={
-                'nombre': 'María',
-                'apellidos': 'González López',
+                'nombre': 'María González López',
+                'apellidos': '',
                 'telefono': '555-123-4567',
                 'fecha_nacimiento': date(1965, 3, 15),
                 'diagnostico_principal': 'Diabetes mellitus tipo 2, hipertensión arterial',

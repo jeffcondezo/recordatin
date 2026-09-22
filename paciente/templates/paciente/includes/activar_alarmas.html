@@ -1,22 +1,24 @@
-<article class="card alarma-card" id="alarma-card">
+<article class="card alarma-card alarma-card-activa" id="alarma-card">
     <div class="alarma-card-header">
         <span class="alarma-icon" aria-hidden="true">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2a7 7 0 0 0-7 7v4.1l-1.4 2.8A1 1 0 0 0 4.6 17h14.8a1 1 0 0 0 .9-1.5L19 13.1V9a7 7 0 0 0-7-7zm0 20a3 3 0 0 0 2.83-2h-5.66A3 3 0 0 0 12 22z"/>
             </svg>
         </span>
-        <h2>Alarmas en este celular</h2>
+        <h2>Recordatorios por SMS</h2>
     </div>
     <p class="lead-text">
-        Reciba un aviso con sonido cuando sea hora de tomar sus medicinas,
-        aunque la pantalla esté apagada.
+        Le enviaremos un mensaje de texto a la hora de cada medicina.
+        No necesita activar notificaciones en este celular.
     </p>
-    <p class="alarma-hint">
-        Para mejores resultados: menú del navegador → <strong>Añadir a pantalla de inicio</strong>,
-        luego pulse el botón de abajo.
+    {% if paciente.telefono %}
+    <p class="alarma-status">
+        Teléfono registrado: <strong>{{ paciente.telefono }}</strong>
     </p>
-    <button type="button" id="btn-activar-alarmas" class="btn btn-accent btn-block btn-lg">
-        Activar alarmas en este celular
-    </button>
-    <p id="alarma-status" class="alarma-status" aria-live="polite"></p>
+    {% else %}
+    <p class="alarma-status alarma-status-error">
+        Aún no hay un teléfono en su perfil. Pida a su médico o investigador
+        que lo registre para recibir los SMS.
+    </p>
+    {% endif %}
 </article>

@@ -28,20 +28,54 @@
         }
     }
 
+    function getCapacitor() {
+        return window.Capacitor || window.capacitor || null;
+    }
+
     function isNativeApp() {
         try {
-            return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+            var Cap = getCapacitor();
+            if (!Cap) return false;
+            if (typeof Cap.isNativePlatform === 'function' && Cap.isNativePlatform()) {
+                return true;
+            }
+            if (typeof Cap.getPlatform === 'function') {
+                var p = Cap.getPlatform();
+                return p === 'android' || p === 'ios';
+            }
+            // WebView de la APK a veces expone Capacitor antes de isNativePlatform.
+            return !!(Cap.isPluginAvailable || Cap.registerPlugin || Cap.Plugins);
         } catch (e) {
             return false;
         }
     }
 
+    var _localNotificationsPlugin = null;
+
     function nativeLocalNotifications() {
+        if (_localNotificationsPlugin) {
+            return _localNotificationsPlugin;
+        }
         try {
-            return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+            var Cap = getCapacitor();
+            if (!Cap) return null;
+            if (Cap.Plugins && Cap.Plugins.LocalNotifications) {
+                _localNotificationsPlugin = Cap.Plugins.LocalNotifications;
+                return _localNotificationsPlugin;
+            }
+            // Con server.url remoto no viene el JS del plugin; hay que registrarlo en el bridge.
+            if (typeof Cap.registerPlugin === 'function') {
+                _localNotificationsPlugin = Cap.registerPlugin('LocalNotifications');
+                return _localNotificationsPlugin;
+            }
+            if (typeof Cap.plugin === 'function') {
+                _localNotificationsPlugin = Cap.plugin('LocalNotifications');
+                return _localNotificationsPlugin;
+            }
         } catch (e) {
             return null;
         }
+        return null;
     }
 
     function getCookie(name) {
@@ -244,12 +278,12 @@
                     title: 'Recordatin — Es hora de su medicina',
                     body: item.nombre + ' (' + item.dosis + ')',
                     schedule: {
-                        at: new Date(item.at_ms),
+                        at: new Date(item.at_ms).toISOString(),
                         allowWhileIdle: true,
                     },
                     actionTypeId: ACTION_TYPE,
                     extra: {
-                        tomaId: item.id,
+                        tomaId: String(item.id),
                         url: '/paciente/medicamentos/hoy/',
                     },
                 });
@@ -333,7 +367,16 @@
     }
 
     function activarAlarmas() {
-        if (isNativeApp() && nativeLocalNotifications()) {
+        // En la APK el WebView NO tiene Notification del navegador; hay que usar el plugin nativo.
+        if (isNativeApp() || getCapacitor()) {
+            var LN = nativeLocalNotifications();
+            if (!LN) {
+                setStatus(
+                    'No se pudo conectar con las alarmas del teléfono. Cierre la app, ábrala de nuevo e intente otra vez. Si sigue igual, reinstale el APK.',
+                    true,
+                );
+                return Promise.resolve();
+            }
             return activarAlarmasNativas();
         }
         return activarAlarmasWeb();
@@ -355,7 +398,7 @@
     }
 
     function initExistingSubscription() {
-        if (isNativeApp() && nativeLocalNotifications()) {
+        if (isNativeApp() || getCapacitor()) {
             if (localStorage.getItem(STORAGE_KEY) === '1') {
                 updateCardState(true);
                 setStatus('Alarmas del teléfono activas.');
@@ -365,7 +408,7 @@
             }
             return;
         }
-        if (Notification.permission !== 'granted') return;
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
         registerServiceWorker().then(function (reg) {
             if (!reg || !reg.pushManager) return;
             return reg.pushManager.getSubscription();
@@ -380,13 +423,43 @@
         }).catch(function () {});
     }
 
-    if (isNativeApp()) {
-        if (hintEl) {
-            hintEl.innerHTML = 'En la app instalada, pulse el botón para programar las <strong>alarmas del teléfono</strong> (más precisas que el navegador).';
+    // Esperar un instante: el bridge de Capacitor a veces se inyecta después del script.
+    function whenCapacitorReady(cb) {
+        if (getCapacitor()) {
+            cb();
+            return;
         }
-    } else if ('serviceWorker' in navigator) {
-        registerServiceWorker().catch(function () {});
+        var tries = 0;
+        var timer = setInterval(function () {
+            tries += 1;
+            if (getCapacitor() || tries > 20) {
+                clearInterval(timer);
+                cb();
+            }
+        }, 100);
     }
+
+    whenCapacitorReady(function () {
+        if (isNativeApp() || getCapacitor()) {
+            if (hintEl) {
+                hintEl.innerHTML = 'En la app instalada, pulse el botón para programar las <strong>alarmas del teléfono</strong> (más precisas que el navegador).';
+            }
+        } else if ('serviceWorker' in navigator) {
+            registerServiceWorker().catch(function () {});
+        }
+
+        if (localStorage.getItem(STORAGE_KEY) === '1' || (!isNativeApp() && typeof Notification !== 'undefined' && Notification.permission === 'granted')) {
+            initExistingSubscription();
+        }
+
+        if (recordatorios.length && localStorage.getItem(STORAGE_KEY) === '1') {
+            if (isNativeApp() || getCapacitor()) {
+                scheduleNativeAlarms();
+            }
+            scheduleForegroundTimers();
+            startPoll();
+        }
+    });
 
     if (navigator.serviceWorker) {
         navigator.serviceWorker.addEventListener('message', function (event) {
@@ -403,17 +476,5 @@
                 btnActivar.disabled = false;
             });
         });
-    }
-
-    if (localStorage.getItem(STORAGE_KEY) === '1' || (!isNativeApp() && typeof Notification !== 'undefined' && Notification.permission === 'granted')) {
-        initExistingSubscription();
-    }
-
-    if (recordatorios.length && localStorage.getItem(STORAGE_KEY) === '1') {
-        if (isNativeApp()) {
-            scheduleNativeAlarms();
-        }
-        scheduleForegroundTimers();
-        startPoll();
     }
 })();

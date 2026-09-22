@@ -10,8 +10,9 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from core.mmas8 import LIKERT8_CHOICES, evaluacion_para
+from core.mmas8 import LIKERT8_CHOICES, evaluacion_para, puntuar_respuestas
 from core.models import EvaluacionMMAS8, MedicamentoPrescrito, Paciente, TomaMedicamento
+from paciente.forms_mmas8 import MMAS8Form, initial_desde_evaluacion, respuestas_desde_form
 from paciente.qr import generar_imagen_qr, url_acceso_paciente
 from paciente.services import generar_tomas_del_dia, medicamentos_activos
 
@@ -62,7 +63,7 @@ def logout_maestro(request):
 
 @maestro_required
 def panel(request):
-    qs = Paciente.objects.select_related('user').order_by('codigo_estudio', 'apellidos')
+    qs = Paciente.objects.select_related('user').order_by('codigo_estudio', 'nombre')
 
     q = (request.GET.get('q') or '').strip()
     grupo = (request.GET.get('grupo') or '').strip()
@@ -75,7 +76,11 @@ def panel(request):
             | Q(apellidos__icontains=q)
             | Q(user__username__icontains=q)
         )
-    if grupo in (Paciente.GRUPO_INTERVENCION, Paciente.GRUPO_CONTROL):
+    if grupo in (
+        Paciente.GRUPO_INTERVENCION,
+        Paciente.GRUPO_CONTROL,
+        Paciente.GRUPO_NO_DEFINIDO,
+    ):
         qs = qs.filter(grupo=grupo)
 
     basal = EvaluacionMMAS8.objects.filter(
@@ -101,6 +106,7 @@ def panel(request):
     total = Paciente.objects.count()
     n_int = Paciente.objects.filter(grupo=Paciente.GRUPO_INTERVENCION).count()
     n_ctrl = Paciente.objects.filter(grupo=Paciente.GRUPO_CONTROL).count()
+    n_nd = Paciente.objects.filter(grupo=Paciente.GRUPO_NO_DEFINIDO).count()
 
     pacientes = list(qs[:500])
     enriquecer_pacientes(pacientes)
@@ -114,6 +120,7 @@ def panel(request):
             'total': total,
             'intervencion': n_int,
             'control': n_ctrl,
+            'no_definido': n_nd,
         },
     })
 
@@ -283,14 +290,15 @@ def paciente_activar_seguimiento_hint(request, paciente_id):
         messages.warning(
             request,
             'Este paciente aún no tiene MMAS-8 basal. '
-            'Primero debe completar el cuestionario de inicio.',
+            'Regístrela usted o pida al paciente que la complete en la app.',
         )
         return redirect('maestro:paciente_detalle', paciente_id=paciente.pk)
 
     if seguimiento:
         messages.info(
             request,
-            'Este paciente ya completó el MMAS-8 de seguimiento.',
+            'Este paciente ya tiene MMAS-8 de seguimiento. '
+            'Puede editarlo desde el botón correspondiente.',
         )
         return redirect('maestro:paciente_detalle', paciente_id=paciente.pk)
 
@@ -299,6 +307,101 @@ def paciente_activar_seguimiento_hint(request, paciente_id):
     messages.success(
         request,
         f'Listo. La próxima vez que {paciente.nombre} entre a la app '
-        'verá el cuestionario de seguimiento para completarlo.',
+        'verá el cuestionario de seguimiento. '
+        'También puede registrarlo usted desde «Registrar seguimiento».',
     )
     return redirect('maestro:paciente_detalle', paciente_id=paciente.pk)
+
+
+@maestro_required
+def paciente_mmas8(request, paciente_id, momento):
+    """Registrar o editar MMAS-8 (basal / seguimiento) desde el panel maestro."""
+    if momento not in (
+        EvaluacionMMAS8.MOMENTO_BASAL,
+        EvaluacionMMAS8.MOMENTO_SEGUIMIENTO,
+    ):
+        messages.error(request, 'Momento de evaluación no válido.')
+        return redirect('maestro:paciente_detalle', paciente_id=paciente_id)
+
+    paciente = get_object_or_404(Paciente, pk=paciente_id)
+    existente = evaluacion_para(paciente, momento)
+
+    if momento == EvaluacionMMAS8.MOMENTO_SEGUIMIENTO:
+        if not evaluacion_para(paciente, EvaluacionMMAS8.MOMENTO_BASAL):
+            messages.warning(
+                request,
+                'Primero registre la evaluación basal (inicio).',
+            )
+            return redirect(
+                'maestro:paciente_mmas8',
+                paciente_id=paciente.pk,
+                momento=EvaluacionMMAS8.MOMENTO_BASAL,
+            )
+
+    if request.method == 'POST':
+        form = MMAS8Form(request.POST)
+        if form.is_valid():
+            respuestas = respuestas_desde_form(form.cleaned_data)
+            puntaje, categoria = puntuar_respuestas(respuestas)
+            ahora = timezone.now()
+            if existente:
+                existente.respuestas = respuestas
+                existente.puntaje = puntaje
+                existente.categoria = categoria
+                existente.registrado_por = EvaluacionMMAS8.ORIGEN_ADMIN
+                existente.fecha = ahora
+                existente.save(
+                    update_fields=[
+                        'respuestas',
+                        'puntaje',
+                        'categoria',
+                        'registrado_por',
+                        'fecha',
+                    ],
+                )
+                accion = 'actualizó'
+            else:
+                EvaluacionMMAS8.objects.create(
+                    paciente=paciente,
+                    momento=momento,
+                    respuestas=respuestas,
+                    puntaje=puntaje,
+                    categoria=categoria,
+                    registrado_por=EvaluacionMMAS8.ORIGEN_ADMIN,
+                )
+                accion = 'registró'
+
+            if (
+                momento == EvaluacionMMAS8.MOMENTO_SEGUIMIENTO
+                and paciente.mmas_seguimiento_solicitado
+            ):
+                paciente.mmas_seguimiento_solicitado = False
+                paciente.save(update_fields=['mmas_seguimiento_solicitado'])
+
+            etiqueta = (
+                'basal (inicio)'
+                if momento == EvaluacionMMAS8.MOMENTO_BASAL
+                else 'seguimiento'
+            )
+            messages.success(
+                request,
+                f'Se {accion} el MMAS-8 de {etiqueta} '
+                f'(puntaje {puntaje}).',
+            )
+            return redirect('maestro:paciente_detalle', paciente_id=paciente.pk)
+    else:
+        form = MMAS8Form(initial=initial_desde_evaluacion(existente))
+
+    titulo = (
+        'MMAS-8 basal (inicio)'
+        if momento == EvaluacionMMAS8.MOMENTO_BASAL
+        else 'MMAS-8 de seguimiento'
+    )
+    return render(request, 'maestro/mmas8_form.html', {
+        'paciente': paciente,
+        'form': form,
+        'momento': momento,
+        'titulo': titulo,
+        'existente': existente,
+        'editando': bool(existente),
+    })

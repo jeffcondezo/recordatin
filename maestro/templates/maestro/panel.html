@@ -4,7 +4,12 @@
 
 {% block content %}
 <section class="page-section">
-    <h1 class="page-title">Pacientes del estudio</h1>
+    <div class="maestro-page-head">
+        <div>
+            <h1 class="page-title">Pacientes del estudio</h1>
+            <p class="lead-text">Listado, métricas de adherencia y acceso a cada ficha.</p>
+        </div>
+    </div>
 
     <div class="maestro-stats">
         <article class="stat-card">
@@ -19,25 +24,36 @@
             <span class="stat-value">{{ stats.control }}</span>
             <span class="stat-label">Control</span>
         </article>
+        <article class="stat-card">
+            <span class="stat-value">{{ stats.no_definido }}</span>
+            <span class="stat-label">No definido</span>
+        </article>
     </div>
 
     <form method="get" class="maestro-filters card">
-        <label for="q">Buscar</label>
-        <input type="search" name="q" id="q" value="{{ q }}" class="form-control"
-               placeholder="Código, nombre o usuario">
-        <label for="grupo">Grupo</label>
-        <select name="grupo" id="grupo" class="form-control">
-            <option value="">Todos</option>
-            <option value="intervencion" {% if grupo == 'intervencion' %}selected{% endif %}>Intervención</option>
-            <option value="control" {% if grupo == 'control' %}selected{% endif %}>Control</option>
-        </select>
-        <label for="mmas">MMAS-8</label>
-        <select name="mmas" id="mmas" class="form-control">
-            <option value="">Todos</option>
-            <option value="sin_basal" {% if mmas == 'sin_basal' %}selected{% endif %}>Sin basal</option>
-            <option value="sin_seguimiento" {% if mmas == 'sin_seguimiento' %}selected{% endif %}>Sin seguimiento</option>
-            <option value="completo" {% if mmas == 'completo' %}selected{% endif %}>Basal + seguimiento</option>
-        </select>
+        <div>
+            <label for="q">Buscar</label>
+            <input type="search" name="q" id="q" value="{{ q }}" class="form-control"
+                   placeholder="Código, nombre o usuario">
+        </div>
+        <div>
+            <label for="grupo">Grupo</label>
+            <select name="grupo" id="grupo" class="form-control">
+                <option value="">Todos</option>
+                <option value="intervencion" {% if grupo == 'intervencion' %}selected{% endif %}>Intervención</option>
+                <option value="control" {% if grupo == 'control' %}selected{% endif %}>Control</option>
+                <option value="no_definido" {% if grupo == 'no_definido' %}selected{% endif %}>No definido</option>
+            </select>
+        </div>
+        <div>
+            <label for="mmas">MMAS-8</label>
+            <select name="mmas" id="mmas" class="form-control">
+                <option value="">Todos</option>
+                <option value="sin_basal" {% if mmas == 'sin_basal' %}selected{% endif %}>Sin basal</option>
+                <option value="sin_seguimiento" {% if mmas == 'sin_seguimiento' %}selected{% endif %}>Sin seguimiento</option>
+                <option value="completo" {% if mmas == 'completo' %}selected{% endif %}>Basal + seguimiento</option>
+            </select>
+        </div>
         <button type="submit" class="btn btn-primary">Filtrar</button>
     </form>
 
@@ -62,10 +78,12 @@
                 {% for p in pacientes %}
                 <tr>
                     <td>{{ p.codigo_estudio|default:"—" }}</td>
-                    <td>{{ p.nombre }} {{ p.apellidos }}</td>
+                    <td>{{ p.nombre_completo }}</td>
                     <td>
                         {% if p.grupo == 'control' %}
                         <span class="badge badge-control">Control</span>
+                        {% elif p.grupo == 'no_definido' %}
+                        <span class="badge badge-no-definido">No definido</span>
                         {% else %}
                         <span class="badge badge-intervencion">Intervención</span>
                         {% endif %}
@@ -113,7 +131,7 @@
                         <button
                             type="button"
                             class="btn btn-secondary btn-sm btn-meds-popup"
-                            data-paciente="{{ p.nombre }} {{ p.apellidos }}"
+                            data-paciente="{{ p.nombre_completo }}"
                             data-meds='[{% for m in p.metricas.medicamentos %}{"nombre":"{{ m.nombre|escapejs }}","dosis":"{{ m.dosis|escapejs }}","horarios":"{{ m.horarios|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
                         >
                             Ver ({{ p.metricas.medicamentos|length }})
