@@ -46,41 +46,20 @@
 
     {% if not ocultar_nav %}
     <nav class="bottom-nav" aria-label="Menú principal">
-        {% if paciente and paciente.es_control %}
-        <a href="{% url 'paciente:mmas8_inicio' %}" class="nav-item {% if nav_active == 'mmas8' %}active{% endif %}">
-            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
-            <span>Cuestionario</span>
-        </a>
-        <a href="{% url 'paciente:perfil' %}" class="nav-item {% if nav_active == 'perfil' %}active{% endif %}">
-            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-            <span>Perfil</span>
-        </a>
-        {% else %}
+        {% if paciente and paciente.es_intervencion %}
         <a href="{% url 'paciente:medicamentos_hoy' %}" class="nav-item {% if nav_active == 'inicio' %}active{% endif %}" aria-label="Mis medicinas de hoy">
             <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
             <span>Medicinas</span>
         </a>
-        <a href="{% url 'paciente:tratamiento' %}" class="nav-item {% if nav_active == 'tratamiento' %}active{% endif %}">
-            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
-            <span>Tratamiento</span>
-        </a>
-        <a href="{% url 'paciente:historial' %}" class="nav-item {% if nav_active == 'historial' %}active{% endif %}">
-            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
-            <span>Historial</span>
-        </a>
-        <a href="{% url 'paciente:citas' %}" class="nav-item {% if nav_active == 'citas' %}active{% endif %}">
-            <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
-            <span>Citas</span>
-        </a>
+        {% endif %}
         <a href="{% url 'paciente:mmas8_inicio' %}" class="nav-item {% if nav_active == 'mmas8' %}active{% endif %}">
             <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
-            <span>MMAS</span>
+            <span>Encuesta</span>
         </a>
         <a href="{% url 'paciente:perfil' %}" class="nav-item {% if nav_active == 'perfil' %}active{% endif %}">
             <svg class="nav-svg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
             <span>Perfil</span>
         </a>
-        {% endif %}
     </nav>
     {% endif %}
 

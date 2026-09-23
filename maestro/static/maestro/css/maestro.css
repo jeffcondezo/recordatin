@@ -17,14 +17,24 @@
     background: var(--m-bg);
     color: var(--m-text);
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
 }
 
 /* Anular el ancho estrecho pensado para pacientes (celular) */
 .maestro-body .app-main,
 .maestro-body .page-section,
-.maestro-body .card,
 .maestro-body .login-container {
     max-width: none;
+}
+
+.maestro-body .card {
+    max-width: 100%;
+}
+
+/* La tarjeta de la tabla SÍ debe limitarse al viewport para poder hacer scroll */
+.maestro-body .maestro-table-wrap.card {
+    max-width: 100%;
+    width: 100%;
 }
 
 .maestro-body .page-section {
@@ -48,6 +58,8 @@
     border-radius: var(--m-radius);
     box-shadow: var(--m-shadow);
     padding: 20px 24px;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .maestro-body .btn-primary {
@@ -162,6 +174,16 @@
     margin: 0;
     padding: 28px 28px 64px;
     box-sizing: border-box;
+    overflow-x: hidden; /* el scroll horizontal vive en .maestro-table-scroll */
+    min-width: 0;
+}
+
+.maestro-body .page-section {
+    gap: 20px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .maestro-page-head {
@@ -260,19 +282,69 @@
     box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
 }
 
-/* Tabla */
+/* Tabla con scroll horizontal usable (touch + mouse) */
 .maestro-table-wrap {
-    overflow-x: auto;
     padding: 0;
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .maestro-table-wrap.card {
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
+}
+
+.maestro-table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+    cursor: grab;
+    padding-bottom: 8px;
+    /* Barra visible en Windows / macOS */
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+.maestro-table-scroll::-webkit-scrollbar {
+    height: 12px;
+}
+
+.maestro-table-scroll::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 0 0 12px 12px;
+}
+
+.maestro-table-scroll::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+}
+
+.maestro-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+.maestro-table-scroll.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+}
+
+.maestro-table-scroll-hint {
+    margin: 0;
+    padding: 8px 16px 0;
+    font-size: 0.85rem;
+    color: var(--m-muted);
 }
 
 .maestro-table {
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
     font-size: 0.92rem;
 }
@@ -317,6 +389,10 @@
 
 .maestro-table a:hover {
     text-decoration: underline;
+}
+
+.maestro-table-wide {
+    min-width: 1100px;
 }
 
 .maestro-table-wide th,

@@ -280,6 +280,46 @@ def paciente_qr_png(request, paciente_id):
 
 
 @maestro_required
+def paciente_consentimiento_firmado_pdf(request, paciente_id):
+    paciente = get_object_or_404(Paciente, pk=paciente_id)
+    if not paciente.tiene_consentimiento:
+        messages.warning(request, 'Este paciente aún no ha firmado el consentimiento.')
+        return redirect('maestro:paciente_detalle', paciente_id=paciente.pk)
+
+    from paciente.consentimiento_pdf_firmado import generar_pdf_consentimiento_firmado
+
+    pdf = generar_pdf_consentimiento_firmado(paciente)
+    codigo = paciente.codigo_estudio or f'id{paciente.pk}'
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = (
+        f'inline; filename="consentimiento-firmado-{codigo}.pdf"'
+    )
+    return response
+
+
+@maestro_required
+@require_POST
+def paciente_anular_consentimiento(request, paciente_id):
+    """Borra la firma para que el paciente deba firmar de nuevo al entrar."""
+    paciente = get_object_or_404(Paciente, pk=paciente_id)
+    if not paciente.tiene_consentimiento:
+        messages.info(request, 'Este paciente aún no tiene consentimiento firmado.')
+        return redirect('maestro:paciente_detalle', paciente_id=paciente.pk)
+
+    if paciente.consentimiento_firma:
+        paciente.consentimiento_firma.delete(save=False)
+    paciente.consentimiento_firma = None
+    paciente.consentimiento_aceptado_at = None
+    paciente.save(update_fields=['consentimiento_firma', 'consentimiento_aceptado_at'])
+    messages.success(
+        request,
+        f'Se anuló el consentimiento de {paciente.nombre_completo}. '
+        'La próxima vez que entre a la app deberá firmar de nuevo.',
+    )
+    return redirect('maestro:paciente_detalle', paciente_id=paciente.pk)
+
+
+@maestro_required
 @require_POST
 def paciente_activar_seguimiento_hint(request, paciente_id):
     paciente = get_object_or_404(Paciente, pk=paciente_id)

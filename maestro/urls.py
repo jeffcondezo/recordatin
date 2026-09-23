@@ -27,6 +27,16 @@ urlpatterns = [
         name='medicamento_desactivar',
     ),
     path(
+        'pacientes/<int:paciente_id>/consentimiento-firmado.pdf',
+        views.paciente_consentimiento_firmado_pdf,
+        name='paciente_consentimiento_firmado_pdf',
+    ),
+    path(
+        'pacientes/<int:paciente_id>/anular-consentimiento/',
+        views.paciente_anular_consentimiento,
+        name='anular_consentimiento',
+    ),
+    path(
         'pacientes/<int:paciente_id>/recordar-seguimiento/',
         views.paciente_activar_seguimiento_hint,
         name='recordar_seguimiento',

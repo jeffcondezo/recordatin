@@ -9,6 +9,11 @@ urlpatterns = [
     path('', views.paciente_home, name='home'),
     path('consentimiento/', views.consentimiento, name='consentimiento'),
     path('consentimiento/documento.pdf', views.consentimiento_pdf, name='consentimiento_pdf'),
+    path(
+        'consentimiento/firmado.pdf',
+        views.consentimiento_firmado_pdf,
+        name='consentimiento_firmado_pdf',
+    ),
     path('entrar/<str:token>/', views.entrar_por_qr, name='entrar_qr'),
     path('medicamentos/hoy/', views.medicamentos_hoy, name='medicamentos_hoy'),
     path('medicamentos/<int:toma_id>/tomar/', views.marcar_tomado, name='marcar_tomado'),

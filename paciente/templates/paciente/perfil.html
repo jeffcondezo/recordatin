@@ -8,15 +8,11 @@
     <h1 class="page-title">Mi perfil</h1>
 
     <p class="lead-text">
-        {% if paciente.es_control %}
-        <a href="{% url 'paciente:mmas8_inicio' %}">Ir al cuestionario MMAS-8</a>
-        {% else %}
-        <a href="{% url 'paciente:medicamentos_hoy' %}">Ir a mis medicinas y alarmas</a>
+        {% if paciente.es_intervencion %}
+        <a href="{% url 'paciente:medicamentos_hoy' %}">Ir a mis medicinas</a>
         ·
-        <a href="{% url 'paciente:dashboard' %}">Ver resumen del día</a>
-        ·
-        <a href="{% url 'paciente:mmas8_inicio' %}">Cuestionario MMAS-8</a>
         {% endif %}
+        <a href="{% url 'paciente:mmas8_inicio' %}">Ir a la encuesta</a>
     </p>
 
     <article class="card perfil-card">
@@ -37,7 +33,34 @@
         {% endif %}
     </article>
 
-    {% if not paciente.es_control %}
+    {% if paciente.tiene_consentimiento %}
+    <article class="card">
+        <h2>Consentimiento informado</h2>
+        <p class="text-muted">
+            Firmado el {{ paciente.consentimiento_aceptado_at|date:"d/m/Y H:i" }}.
+        </p>
+        {% if paciente.consentimiento_firma %}
+        <img
+            src="{{ paciente.consentimiento_firma.url }}"
+            alt="Su firma"
+            class="firma-preview"
+        >
+        {% endif %}
+        <a
+            class="btn btn-primary btn-block"
+            href="{% url 'paciente:consentimiento_firmado_pdf' %}"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            Ver consentimiento firmado (PDF)
+        </a>
+        <a class="btn btn-secondary btn-block" href="{% url 'paciente:consentimiento' %}?editar=1">
+            Corregir firma
+        </a>
+    </article>
+    {% endif %}
+
+    {% if paciente.es_intervencion %}
     <article class="card contador-dias-card">
         {% include 'paciente/includes/contador_dias.html' with contador_id='perfil' %}
         <a href="{% url 'paciente:dias_cumplidos' %}" class="btn btn-primary btn-block contador-dias-enlace">Ver detalle de días cumplidos</a>
@@ -50,26 +73,8 @@
             Puede seguir registrándolas: lo más importante es su salud.
         </p>
     </article>
-
-    <article class="card">
-        <h2>Probar SMS</h2>
-        <p class="lead-text">
-            Envíe un mensaje de prueba al teléfono registrado
-            {% if paciente.telefono %}(<strong>{{ paciente.telefono }}</strong>){% endif %}.
-        </p>
-        <form method="post" action="{% url 'paciente:probar_notificacion' %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-accent btn-block" {% if not paciente.telefono %}disabled{% endif %}>
-                Enviar SMS de prueba
-            </button>
-        </form>
-        {% if not paciente.telefono %}
-        <p class="text-muted" style="margin-top: 0.75rem;">
-            No hay teléfono registrado. Solicite que lo carguen en el panel del estudio.
-        </p>
-        {% endif %}
-    </article>
     {% endif %}
+
     {% if paciente.enfermedades %}
     <article class="card">
         <h2>Sus enfermedades</h2>
@@ -81,15 +86,16 @@
     </article>
     {% endif %}
 
-
-    {% if not paciente.es_control %}
+    {% if paciente.es_intervencion %}
     <article class="card">
         <h2>Su tratamiento</h2>
         <p>Tiene <strong>{{ prescripciones_activas }}</strong> receta{{ prescripciones_activas|pluralize }} activa{{ prescripciones_activas|pluralize }}.</p>
     </article>
+    {% endif %}
 
     {% include 'paciente/includes/ajuste_texto.html' %}
 
+    {% if paciente.es_intervencion %}
     <article class="card cuidadores-card">
         <h2>Familiares y cuidadores</h2>
         <p class="lead-text">
@@ -137,8 +143,6 @@
             <button type="submit" class="btn btn-primary btn-block">Invitar familiar</button>
         </form>
     </article>
-    {% else %}
-    {% include 'paciente/includes/ajuste_texto.html' %}
     {% endif %}
 
     <form method="post" action="{% url 'logout' %}">

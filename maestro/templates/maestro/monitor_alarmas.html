@@ -48,6 +48,8 @@
 
     <div class="card maestro-table-wrap">
         {% if filas %}
+        <p class="maestro-table-scroll-hint">Deslice o arrastre la tabla hacia los lados para ver más columnas →</p>
+        <div class="maestro-table-scroll" id="maestro-table-scroll">
         <table class="maestro-table maestro-table-wide">
             <thead>
                 <tr>
@@ -85,6 +87,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
         <p class="empty-state">
             No hay tomas para hoy. Ejecute
@@ -93,4 +96,33 @@
         {% endif %}
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var scroller = document.getElementById('maestro-table-scroll');
+    if (!scroller) return;
+    var dragging = false;
+    var startX = 0;
+    var startLeft = 0;
+    scroller.addEventListener('mousedown', function (e) {
+        if (e.button !== 0) return;
+        if (e.target.closest('a, button, input, select, label')) return;
+        dragging = true;
+        startX = e.pageX;
+        startLeft = scroller.scrollLeft;
+        scroller.classList.add('is-dragging');
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        scroller.scrollLeft = startLeft - (e.pageX - startX);
+    });
+    window.addEventListener('mouseup', function () {
+        dragging = false;
+        scroller.classList.remove('is-dragging');
+    });
+})();
+</script>
 {% endblock %}

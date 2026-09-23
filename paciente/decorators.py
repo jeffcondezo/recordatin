@@ -11,6 +11,7 @@ from .services import obtener_paciente
 _CONSENTIMIENTO_OK_NAMES = frozenset({
     'consentimiento',
     'consentimiento_pdf',
+    'consentimiento_firmado_pdf',
     'service_worker',
     'web_manifest',
 })

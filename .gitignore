@@ -31,6 +31,10 @@ Thumbs.db
 .env.local
 vapid_private.pem
 
+# Firmas originales de investigadores (también hay versiones procesadas en static)
+firma_i1.png
+firma_i2.png
+
 # Datos personales de carga (no versionar)
 carga.xlsx
 *.xlsx

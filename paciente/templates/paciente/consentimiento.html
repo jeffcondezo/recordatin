@@ -1,15 +1,25 @@
 {% extends 'paciente/base.html' %}
 
-{% block title %}Consentimiento informado — Recordatin{% endblock %}
+{% block title %}{% if editando %}Corregir firma{% else %}Consentimiento informado{% endif %} — Recordatin{% endblock %}
 
 {% block content %}
 <section class="page-section consentimiento-section">
-    <h1 class="page-title">Consentimiento informado</h1>
+    <h1 class="page-title">
+        {% if editando %}Corregir firma{% else %}Consentimiento informado{% endif %}
+    </h1>
     <p class="lead-text">
+        {% if editando %}
+        Puede volver a firmar si se equivocó. La firma anterior se reemplazará.
+        {% else %}
         Antes de continuar, lea el documento de consentimiento informado.
         Si está de acuerdo, fírmelo con el dedo en el recuadro y pulse
         <strong>Estoy de acuerdo</strong>.
+        {% endif %}
     </p>
+
+    {% if editando %}
+    <p class="lead-text"><a href="{% url 'paciente:perfil' %}">← Volver al perfil</a></p>
+    {% endif %}
 
     <article class="card">
         <h2>Documento</h2>
@@ -26,8 +36,22 @@
         </a>
     </article>
 
+    {% if editando and paciente.consentimiento_firma %}
     <article class="card">
-        <h2>Su firma</h2>
+        <h2>Firma actual</h2>
+        <img
+            src="{{ paciente.consentimiento_firma.url }}"
+            alt="Firma guardada"
+            class="firma-preview"
+        >
+        <p class="text-muted">
+            Firmada el {{ paciente.consentimiento_aceptado_at|date:"d/m/Y H:i" }}.
+        </p>
+    </article>
+    {% endif %}
+
+    <article class="card">
+        <h2>{% if editando %}Nueva firma{% else %}Su firma{% endif %}</h2>
         <p class="lead-text">Firme aquí con el dedo (o el mouse en una computadora).</p>
         <div class="firma-wrap">
             <canvas id="firma-canvas" class="firma-canvas" width="640" height="240" aria-label="Área de firma"></canvas>
@@ -39,9 +63,10 @@
 
     <form method="post" id="firma-form" class="consentimiento-acciones">
         {% csrf_token %}
+        {% if editando %}<input type="hidden" name="editar" value="1">{% endif %}
         <input type="hidden" name="firma" id="firma-data" value="">
         <button type="submit" class="btn btn-primary btn-block btn-lg" id="firma-aceptar">
-            Estoy de acuerdo
+            {% if editando %}Guardar nueva firma{% else %}Estoy de acuerdo{% endif %}
         </button>
     </form>
 </section>

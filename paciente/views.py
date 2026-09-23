@@ -178,10 +178,39 @@ def consentimiento_pdf(request):
 
 
 @paciente_required
+def consentimiento_firmado_pdf(request):
+    """PDF dinámico con texto + firma del paciente + investigadores."""
+    paciente = request.paciente
+    if not paciente.tiene_consentimiento:
+        messages.warning(request, 'Primero debe firmar el consentimiento informado.')
+        return redirect('paciente:consentimiento')
+
+    from .consentimiento_pdf_firmado import generar_pdf_consentimiento_firmado
+
+    pdf = generar_pdf_consentimiento_firmado(paciente)
+    codigo = paciente.codigo_estudio or f'id{paciente.pk}'
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = (
+        f'inline; filename="consentimiento-firmado-{codigo}.pdf"'
+    )
+    return response
+
+
+@paciente_required
 def consentimiento(request):
     paciente = request.paciente
-    if paciente.tiene_consentimiento:
+    editando = (
+        request.GET.get('editar') == '1'
+        or request.POST.get('editar') == '1'
+    )
+
+    # Ya firmó y no está corrigiendo → seguir el flujo normal
+    if paciente.tiene_consentimiento and not editando:
         return redirect(url_inicio_paciente(paciente))
+
+    # Corregir firma solo si ya había consentimiento
+    if editando and not paciente.tiene_consentimiento:
+        return redirect('paciente:consentimiento')
 
     if request.method == 'POST':
         firma_b64 = (request.POST.get('firma') or '').strip()
@@ -192,7 +221,6 @@ def consentimiento(request):
                 raw = base64.b64decode(firma_b64.split(',', 1)[1])
             except Exception:
                 raw = b''
-            # Firma vacía / casi en blanco
             if len(raw) < 800:
                 messages.error(
                     request,
@@ -213,6 +241,9 @@ def consentimiento(request):
                 paciente.save(
                     update_fields=['consentimiento_firma', 'consentimiento_aceptado_at'],
                 )
+                if editando:
+                    messages.success(request, 'Firma actualizada correctamente.')
+                    return redirect('paciente:perfil')
                 messages.success(
                     request,
                     'Gracias. Su consentimiento quedó registrado.',
@@ -221,8 +252,9 @@ def consentimiento(request):
 
     return render(request, 'paciente/consentimiento.html', {
         'paciente': paciente,
-        'nav_active': None,
-        'ocultar_nav': True,
+        'nav_active': 'perfil' if editando else None,
+        'ocultar_nav': not editando,
+        'editando': editando,
     })
 
 
@@ -328,7 +360,7 @@ def mmas8_formulario(request, momento):
     else:
         form = MMAS8Form()
 
-    titulo = 'Cuestionario de inicio' if momento == 'basal' else 'Cuestionario de seguimiento'
+    titulo = 'Encuesta de inicio' if momento == 'basal' else 'Encuesta de seguimiento'
     return render(request, 'paciente/mmas8_form.html', {
         'paciente': paciente,
         'form': form,

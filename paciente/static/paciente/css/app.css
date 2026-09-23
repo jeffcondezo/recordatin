@@ -1525,3 +1525,13 @@ body {
     margin-top: 8px;
     margin-bottom: 24px;
 }
+
+.firma-preview {
+    display: block;
+    width: 100%;
+    max-width: 360px;
+    margin: 8px 0 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+}

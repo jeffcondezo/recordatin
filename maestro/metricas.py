@@ -26,13 +26,14 @@ def metricas_paciente(paciente, tomas=None, basal=None, medicamentos=None):
     if tomas is None:
         tomas = list(
             TomaMedicamento.objects.filter(paciente=paciente).only(
-                'estado', 'a_tiempo', 'fecha',
+                'estado', 'a_tiempo', 'fecha', 'alarma_enviada_at',
             )
         )
 
     total = len(tomas)
     respondidas = sum(1 for t in tomas if t.estado == TomaMedicamento.ESTADO_TOMADO)
     a_tiempo = sum(1 for t in tomas if t.a_tiempo is True)
+    sms_enviados = sum(1 for t in tomas if t.alarma_enviada_at is not None)
 
     por_dia = defaultdict(lambda: {'total': 0, 'respondidas': 0, 'a_tiempo': 0})
     for t in tomas:
@@ -83,6 +84,7 @@ def metricas_paciente(paciente, tomas=None, basal=None, medicamentos=None):
         'alertas_respondidas': respondidas,
         'alertas_total': total,
         'alertas_a_tiempo': a_tiempo,
+        'sms_enviados': sms_enviados,
         'promedio_respuesta_dia': promedio_respuesta_dia,
         'promedio_horario_dia': promedio_horario_dia,
         'medicamentos': meds_info,
@@ -104,7 +106,7 @@ def enriquecer_pacientes(pacientes):
     }
 
     tomas_qs = TomaMedicamento.objects.filter(paciente_id__in=ids).only(
-        'paciente_id', 'estado', 'a_tiempo', 'fecha',
+        'paciente_id', 'estado', 'a_tiempo', 'fecha', 'alarma_enviada_at',
     )
     tomas_por = defaultdict(list)
     for t in tomas_qs:

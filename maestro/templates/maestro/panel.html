@@ -58,6 +58,8 @@
     </form>
 
     <div class="card maestro-table-wrap">
+        <p class="maestro-table-scroll-hint">Deslice o arrastre la tabla hacia los lados para ver más columnas →</p>
+        <div class="maestro-table-scroll" id="maestro-table-scroll">
         <table class="maestro-table maestro-table-wide">
             <thead>
                 <tr>
@@ -67,9 +69,9 @@
                     <th>MMAS basal</th>
                     <th>Primer acceso</th>
                     <th>Días desde basal</th>
+                    <th>SMS enviados</th>
                     <th>Alertas respondidas</th>
-                    <th>% resp./día</th>
-                    <th>% a tiempo/día</th>
+                    <th>A tiempo</th>
                     <th>Medicinas</th>
                     <th></th>
                 </tr>
@@ -110,23 +112,11 @@
                         —
                         {% endif %}
                     </td>
+                    <td>{{ p.metricas.sms_enviados }}</td>
                     <td>
                         {{ p.metricas.alertas_respondidas }}/{{ p.metricas.alertas_total }}
                     </td>
-                    <td>
-                        {% if p.metricas.promedio_respuesta_dia is not None %}
-                        {{ p.metricas.promedio_respuesta_dia }}%
-                        {% else %}
-                        —
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if p.metricas.promedio_horario_dia is not None %}
-                        {{ p.metricas.promedio_horario_dia }}%
-                        {% else %}
-                        —
-                        {% endif %}
-                    </td>
+                    <td>{{ p.metricas.alertas_a_tiempo }}</td>
                     <td>
                         <button
                             type="button"
@@ -144,6 +134,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 </section>
 
@@ -162,6 +153,31 @@
 {% block extra_js %}
 <script>
 (function () {
+    /* Arrastrar la tabla con el mouse (scroll horizontal) */
+    var scroller = document.getElementById('maestro-table-scroll');
+    if (scroller) {
+        var dragging = false;
+        var startX = 0;
+        var startLeft = 0;
+        scroller.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+            if (e.target.closest('a, button, input, select, label')) return;
+            dragging = true;
+            startX = e.pageX;
+            startLeft = scroller.scrollLeft;
+            scroller.classList.add('is-dragging');
+            e.preventDefault();
+        });
+        window.addEventListener('mousemove', function (e) {
+            if (!dragging) return;
+            scroller.scrollLeft = startLeft - (e.pageX - startX);
+        });
+        window.addEventListener('mouseup', function () {
+            dragging = false;
+            scroller.classList.remove('is-dragging');
+        });
+    }
+
     var modal = document.getElementById('meds-modal');
     var tituloPac = document.getElementById('meds-modal-paciente');
     var list = document.getElementById('meds-modal-list');

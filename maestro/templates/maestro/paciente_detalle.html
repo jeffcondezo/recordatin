@@ -22,9 +22,9 @@
         </div>
     </div>
 
-    {% if paciente.tiene_consentimiento %}
     <article class="card">
         <h2>Consentimiento informado</h2>
+        {% if paciente.tiene_consentimiento %}
         <p class="text-muted">
             Aceptado el {{ paciente.consentimiento_aceptado_at|date:"d/m/Y H:i" }}.
         </p>
@@ -36,8 +36,31 @@
             style="max-width: 360px; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;"
         >
         {% endif %}
+        <p style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px;">
+            <a
+                class="btn btn-primary btn-sm"
+                href="{% url 'maestro:paciente_consentimiento_firmado_pdf' paciente.pk %}"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                Ver consentimiento firmado (PDF)
+            </a>
+        </p>
+        <form
+            method="post"
+            action="{% url 'maestro:anular_consentimiento' paciente.pk %}"
+            style="margin-top: 8px;"
+            onsubmit="return confirm('¿Anular la firma? La próxima vez que el paciente entre deberá firmar de nuevo.');"
+        >
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger-outline btn-sm">
+                Anular firma (pedir de nuevo)
+            </button>
+        </form>
+        {% else %}
+        <p class="text-muted">Pendiente: el paciente aún no ha firmado.</p>
+        {% endif %}
     </article>
-    {% endif %}
 
     <div class="maestro-detalle-grid">
         <article class="card maestro-qr-card">
