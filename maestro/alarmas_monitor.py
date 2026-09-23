@@ -19,6 +19,7 @@ def _diagnostico_toma(toma, ahora):
     anticipo_max = getattr(settings, 'SMS_ANTICIPO_MAX_MINUTOS', None)
     if anticipo_max is None:
         from paciente.constants import SMS_ANTICIPO_MAX_MINUTOS as anticipo_max
+    from paciente.constants import SMS_REINTENTO_DESPUES_MINUTOS as reintento_despues
 
     if toma.alarma_enviada_at:
         if canal == 'sms':
@@ -27,21 +28,24 @@ def _diagnostico_toma(toma, ahora):
 
     if canal == 'sms':
         inicio_envio = programada - timedelta(minutes=anticipo_max)
+        fin_reintento = programada + timedelta(minutes=reintento_despues)
         if ahora < inicio_envio:
             mins = int((inicio_envio - ahora).total_seconds() // 60)
             return 'pendiente_hora', f'SMS se enviará ~{anticipo_max} min antes (faltan ~{mins} min)'
-        if ahora > programada:
+        if ahora > fin_reintento:
             if not telefono:
                 return 'sin_dispositivo', 'Sin teléfono registrado'
             if not msisdn:
                 return 'sin_dispositivo', f'Teléfono inválido ({telefono})'
-            return 'no_enviada', 'Ventana de anticipo pasó y no hay envío — revise cron o LabsMobile'
-        # ahora entre inicio_envio y programada
+            return 'no_enviada', 'Ventana de envío pasó y no hay SMS — revise cron o LabsMobile'
+        # ahora entre inicio_envio y fin_reintento
         if not telefono:
             return 'sin_dispositivo', 'Sin teléfono registrado'
         if not msisdn:
             return 'sin_dispositivo', f'Teléfono inválido ({telefono})'
-        return 'esperando_cron', 'En ventana de anticipo; el cron debería enviar el SMS pronto'
+        if ahora <= programada:
+            return 'esperando_cron', 'En ventana de anticipo; el cron debería enviar el SMS pronto'
+        return 'esperando_cron', 'Hora pasó hace poco; el cron aún puede reenviar el SMS'
 
     if ahora < programada:
         return 'pendiente_hora', 'Aún no es la hora'

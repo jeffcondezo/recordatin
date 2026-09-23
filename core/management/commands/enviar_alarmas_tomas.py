@@ -9,6 +9,7 @@ from core.models import TomaMedicamento
 from paciente.constants import (
     SMS_ANTICIPO_MAX_MINUTOS,
     SMS_MAX_CARACTERES,
+    SMS_REINTENTO_DESPUES_MINUTOS,
     VENTANA_REINTENTO_ALARMA_MINUTOS,
 )
 from paciente.push import enviar_push_paciente
@@ -40,7 +41,8 @@ class Command(BaseCommand):
         if canal == 'sms':
             total = self._enviar_sms_agrupados(ahora, hoy)
             self.stdout.write(
-                f'Canal=sms; anticipo 0–{SMS_ANTICIPO_MAX_MINUTOS} min; '
+                f'Canal=sms; ventana -{SMS_ANTICIPO_MAX_MINUTOS}…'
+                f'+{SMS_REINTENTO_DESPUES_MINUTOS} min; '
                 f'grupos enviados: {total}',
             )
         else:
@@ -75,7 +77,9 @@ class Command(BaseCommand):
             return 0
 
         tz = timezone.get_current_timezone()
-        limite_lejos = ahora + timedelta(minutes=SMS_ANTICIPO_MAX_MINUTOS)
+        # Enviar desde 10 min antes hasta 15 min después de la hora programada.
+        inicio_ventana = ahora - timedelta(minutes=SMS_REINTENTO_DESPUES_MINUTOS)
+        fin_ventana = ahora + timedelta(minutes=SMS_ANTICIPO_MAX_MINUTOS)
 
         # Enlace a la app para registrar (SITE_URL o spentor.app por defecto).
         incluir_enlace = True
@@ -86,8 +90,7 @@ class Command(BaseCommand):
                 datetime.combine(toma.fecha, toma.hora_programada),
                 tz,
             )
-            # Enviar desde 10 min antes hasta la hora programada (ideal 5–10 min antes).
-            if ahora <= programada <= limite_lejos:
+            if inicio_ventana <= programada <= fin_ventana:
                 grupos[(toma.paciente_id, toma.hora_programada)].append(toma)
 
         total = 0
