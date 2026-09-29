@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.utils import timezone
 
-from core.models import TomaMedicamento
+from core.models import Paciente, TomaMedicamento
 from paciente.sms import normalizar_msisdn
 
 
@@ -66,10 +66,19 @@ def _diagnostico_toma(toma, ahora):
     return 'esperando_cron', 'Hora cumplida; el cron debería enviarla en esta ventana'
 
 
-def tomas_alarmas_hoy(paciente=None, fecha=None):
+def tomas_alarmas_hoy(paciente=None, fecha=None, solo_intervencion=None):
+    """
+    Lista tomas del día con diagnóstico de SMS/push.
+
+    En el monitor global solo se muestran pacientes de intervención
+    (los únicos a los que se les envía SMS). En la ficha de un paciente
+    se muestran sus tomas aunque no sea de intervención.
+    """
     if fecha is None:
         fecha = timezone.localdate()
     ahora = timezone.localtime()
+    if solo_intervencion is None:
+        solo_intervencion = paciente is None
 
     qs = (
         TomaMedicamento.objects.filter(fecha=fecha)
@@ -78,6 +87,8 @@ def tomas_alarmas_hoy(paciente=None, fecha=None):
     )
     if paciente is not None:
         qs = qs.filter(paciente=paciente)
+    elif solo_intervencion:
+        qs = qs.filter(paciente__grupo=Paciente.GRUPO_INTERVENCION)
 
     filas = []
     for toma in qs:

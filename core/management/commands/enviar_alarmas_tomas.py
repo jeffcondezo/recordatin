@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from core.models import TomaMedicamento
+from core.models import Paciente, TomaMedicamento
 from paciente.constants import (
     SMS_ANTICIPO_MAX_MINUTOS,
     SMS_MAX_CARACTERES,
@@ -63,6 +63,8 @@ class Command(BaseCommand):
                 alarma_enviada_at__isnull=True,
                 medicamento__activo=True,
                 medicamento__prescripcion__activa=True,
+                # Solo intervención recibe SMS (control / no_definido fuera).
+                paciente__grupo=Paciente.GRUPO_INTERVENCION,
             ).select_related('medicamento', 'paciente')
         )
 
@@ -96,8 +98,12 @@ class Command(BaseCommand):
         total = 0
         for (_paciente_id, hora), tomas in sorted(grupos.items(), key=lambda x: x[0][1]):
             paciente = tomas[0].paciente
-            # Solo intervención; control / no_definido no reciben SMS.
-            if paciente.grupo != paciente.GRUPO_INTERVENCION:
+            # Doble chequeo: solo intervención.
+            if not paciente.es_intervencion:
+                self.stdout.write(
+                    f'SMS omitido {hora:%H:%M} paciente {paciente.pk}: '
+                    f'grupo={paciente.grupo}',
+                )
                 continue
             mensaje = mensaje_recordatorio_grupo(tomas, incluir_enlace=incluir_enlace)
             resultado = enviar_sms_paciente(paciente, mensaje)
